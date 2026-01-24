@@ -71,7 +71,7 @@
 #### Rust 数据结构
 
 ```rust
-// src-tauri/src/app_config.rs
+// src/app_config.rs
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodexMcpConfig {
     /// 完整的 MCP TOML 片段（包含 [mcp] 等）
@@ -164,7 +164,7 @@ pub struct MultiAppConfig {
 
 #### 1. 配置管理
 
-**文件**：`src-tauri/src/app_config.rs`
+**文件**：`src/app_config.rs`
 
 ```rust
 impl MultiAppConfig {
@@ -207,7 +207,7 @@ impl MultiAppConfig {
 
 #### 2. 数据迁移
 
-**文件**：`src-tauri/src/migration.rs`
+**文件**：`src/migration.rs`
 
 ```rust
 /// 将 v3.6.2 的 mcp.codex.servers 迁移为 codexMcp.rawToml
@@ -344,7 +344,7 @@ fn convert_legacy_codex_mcp_to_toml(
 
 #### 3. Tauri 命令
 
-**文件**：`src-tauri/src/commands/mcp.rs`
+**文件**：`src/commands/mcp.rs`
 
 ```rust
 /// 获取 Codex MCP 配置
@@ -451,7 +451,7 @@ fn extract_mcp_section_from_toml(content: &str) -> Result<String, String> {
 
 #### 3. 切换逻辑
 
-**文件**：`src-tauri/src/services/provider.rs`
+**文件**：`src/services/provider.rs`
 
 ```rust
 impl ProviderService {

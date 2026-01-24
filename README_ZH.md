@@ -26,21 +26,6 @@
 
 ---
 
-## 📸 截图预览
-
-<table>
-  <tr>
-    <th>交互式主界面</th>
-    <th>供应商管理</th>
-  </tr>
-  <tr>
-    <td><img src="assets/screenshots/main-ch.png" alt="主界面" width="100%"/></td>
-    <td><img src="assets/screenshots/add-ch.png" alt="供应商管理" width="100%"/></td>
-  </tr>
-</table>
-
----
-
 ## 🚀 快速开始
 
 **交互模式（推荐）**
@@ -264,7 +249,7 @@ move cc-switch.exe C:\Windows\System32\
 **构建：**
 ```bash
 git clone https://github.com/saladday/cc-switch-cli.git
-cd cc-switch-cli/src-tauri
+cd cc-switch-cli
 cargo build --release
 
 # 二进制位置：./target/release/cc-switch
@@ -380,8 +365,6 @@ cc-switch --app codex provider list
 ### 开发命令
 
 ```bash
-cd src-tauri
-
 cargo run                            # 开发模式
 cargo run -- provider list           # 运行特定命令
 cargo build --release                # 构建 release
@@ -394,7 +377,7 @@ cargo test                           # 运行测试
 ### 代码结构
 
 ```
-src-tauri/src/
+src/
 ├── cli/
 │   ├── commands/          # CLI 子命令（provider, mcp, prompts, config）
 │   ├── interactive/       # 交互式 TUI 模式
