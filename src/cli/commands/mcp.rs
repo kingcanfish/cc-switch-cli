@@ -264,11 +264,7 @@ fn import_servers(app_type: AppType) -> Result<(), AppError> {
         ))
     );
 
-    let count = match app_type {
-        AppType::Claude => McpService::import_from_claude(&state)?,
-        AppType::Codex => McpService::import_from_codex(&state)?,
-        AppType::Gemini => McpService::import_from_gemini(&state)?,
-    };
+    let count = McpService::import_from_app(&state, app_type)?;
 
     if count > 0 {
         println!(

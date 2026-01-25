@@ -53,7 +53,6 @@ pub struct AppSettings {
     pub custom_endpoints_codex: HashMap<String, CustomEndpoint>,
 }
 
-
 impl AppSettings {
     fn settings_path() -> PathBuf {
         // settings.json 必须使用固定路径，不能被 app_config_dir 覆盖

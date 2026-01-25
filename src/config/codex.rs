@@ -1,21 +1,29 @@
-// unused imports removed
 use std::path::PathBuf;
 
-use crate::config::{
+use super::{
     atomic_write, delete_file, sanitize_provider_name, write_json_file, write_text_file,
+    AppConfigPaths,
 };
 use crate::error::AppError;
 use serde_json::Value;
 use std::fs;
 use std::path::Path;
 
-/// 获取 Codex 配置目录路径
-pub fn get_codex_config_dir() -> PathBuf {
-    if let Some(custom) = crate::settings::get_codex_override_dir() {
-        return custom;
+pub struct CodexConfig;
+
+impl AppConfigPaths for CodexConfig {
+    fn override_dir() -> Option<PathBuf> {
+        crate::settings::get_codex_override_dir()
     }
 
-    dirs::home_dir().expect("无法获取用户主目录").join(".codex")
+    fn default_dir() -> PathBuf {
+        dirs::home_dir().expect("无法获取用户主目录").join(".codex")
+    }
+}
+
+/// 获取 Codex 配置目录路径
+pub fn get_codex_config_dir() -> PathBuf {
+    CodexConfig::config_dir()
 }
 
 /// 获取 Codex auth.json 路径

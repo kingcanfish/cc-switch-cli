@@ -36,7 +36,8 @@ fn import_mcp_from_claude_creates_config_and_enables_servers() {
         config: RwLock::new(MultiAppConfig::default()),
     };
 
-    let changed = McpService::import_from_claude(&state).expect("import mcp from claude succeeds");
+    let changed = McpService::import_from_app(&state, AppType::Claude)
+        .expect("import mcp from claude succeeds");
     assert!(
         changed > 0,
         "import should report inserted or normalized entries"
@@ -79,8 +80,8 @@ fn import_mcp_from_claude_invalid_json_preserves_state() {
         config: RwLock::new(MultiAppConfig::default()),
     };
 
-    let err =
-        McpService::import_from_claude(&state).expect_err("invalid json should bubble up error");
+    let err = McpService::import_from_app(&state, AppType::Claude)
+        .expect_err("invalid json should bubble up error");
     match err {
         AppError::McpValidation(msg) => assert!(
             msg.contains("解析 ~/.claude.json 失败"),

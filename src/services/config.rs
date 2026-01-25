@@ -319,10 +319,10 @@ impl ConfigService {
         }
         let cfg_text = settings.get("config").and_then(Value::as_str);
 
-        crate::codex_config::write_codex_live_atomic(auth, cfg_text)?;
-        crate::mcp::sync_enabled_to_codex(config)?;
+        crate::config::codex::write_codex_live_atomic(auth, cfg_text)?;
+        crate::mcp::sync_enabled_to(&AppType::Codex, config)?;
 
-        let cfg_text_after = crate::codex_config::read_and_validate_codex_config_text()?;
+        let cfg_text_after = crate::config::codex::read_and_validate_codex_config_text()?;
         if let Some(manager) = config.get_manager_mut(&AppType::Codex) {
             if let Some(target) = manager.providers.get_mut(provider_id) {
                 if let Some(obj) = target.settings_config.as_object_mut() {
@@ -344,7 +344,7 @@ impl ConfigService {
     ) -> Result<(), AppError> {
         use crate::config::{read_json_file, write_json_file};
 
-        let settings_path = crate::config::get_claude_settings_path();
+        let settings_path = crate::config::claude::get_claude_settings_path();
         if let Some(parent) = settings_path.parent() {
             fs::create_dir_all(parent).map_err(|e| AppError::io(parent, e))?;
         }
@@ -366,14 +366,14 @@ impl ConfigService {
         provider_id: &str,
         provider: &Provider,
     ) -> Result<(), AppError> {
-        use crate::gemini_config::{env_to_json, read_gemini_env};
+        use crate::config::gemini::{env_to_json, read_gemini_env};
 
         let common_config_snippet = config.common_config_snippets.gemini.as_deref();
         ProviderService::write_gemini_live(provider, common_config_snippet)?;
 
         // 读回实际写入的内容并更新到配置中（包含 settings.json）
         let live_after_env = read_gemini_env()?;
-        let settings_path = crate::gemini_config::get_gemini_settings_path();
+        let settings_path = crate::config::gemini::get_gemini_settings_path();
         let live_after_config = if settings_path.exists() {
             crate::config::read_json_file(&settings_path)?
         } else {

@@ -1,19 +1,27 @@
-use crate::config::write_text_file;
+use super::{write_text_file, AppConfigPaths};
 use crate::error::AppError;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-/// 获取 Gemini 配置目录路径（支持设置覆盖）
-pub fn get_gemini_dir() -> PathBuf {
-    if let Some(custom) = crate::settings::get_gemini_override_dir() {
-        return custom;
+pub struct GeminiConfig;
+
+impl AppConfigPaths for GeminiConfig {
+    fn override_dir() -> Option<PathBuf> {
+        crate::settings::get_gemini_override_dir()
     }
 
-    dirs::home_dir()
-        .expect("无法获取用户主目录")
-        .join(".gemini")
+    fn default_dir() -> PathBuf {
+        dirs::home_dir()
+            .expect("无法获取用户主目录")
+            .join(".gemini")
+    }
+}
+
+/// 获取 Gemini 配置目录路径（支持设置覆盖）
+pub fn get_gemini_dir() -> PathBuf {
+    GeminiConfig::config_dir()
 }
 
 /// 获取 Gemini .env 文件路径

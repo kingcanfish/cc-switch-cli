@@ -229,9 +229,9 @@ fn mcp_delete_server_interactive(state: &AppState) -> Result<(), AppError> {
 fn mcp_import_servers_interactive(state: &AppState) -> Result<(), AppError> {
     clear_screen();
     let mut total = 0;
-    total += McpService::import_from_claude(state)?;
-    total += McpService::import_from_codex(state)?;
-    total += McpService::import_from_gemini(state)?;
+    total += McpService::import_from_app(state, AppType::Claude)?;
+    total += McpService::import_from_app(state, AppType::Codex)?;
+    total += McpService::import_from_app(state, AppType::Gemini)?;
 
     println!("\n{}", success(&texts::servers_imported(total)));
     pause();

@@ -141,10 +141,7 @@ fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppE
             };
 
             if !value.is_object() {
-                println!(
-                    "\n{}",
-                    error(texts::common_config_snippet_not_object())
-                );
+                println!("\n{}", error(texts::common_config_snippet_not_object()));
                 if !retry_prompt()? {
                     return Ok(());
                 }

@@ -5,11 +5,9 @@ use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::app_config::{AppType, MultiAppConfig};
-use crate::codex_config::{get_codex_auth_path, get_codex_config_path};
-use crate::config::{
-    delete_file, get_claude_settings_path, get_provider_config_path, read_json_file,
-    write_json_file, write_text_file,
-};
+use crate::config::claude::{get_claude_settings_path, get_provider_config_path};
+use crate::config::codex::{get_codex_auth_path, get_codex_config_path};
+use crate::config::{delete_file, read_json_file, write_json_file, write_text_file};
 use crate::error::AppError;
 use crate::provider::{Provider, ProviderMeta, UsageData, UsageResult};
 use crate::settings::{self, CustomEndpoint};
@@ -81,7 +79,7 @@ impl LiveSnapshot {
             }
             LiveSnapshot::Gemini { env, .. } => {
                 // 新增
-                use crate::gemini_config::{
+                use crate::config::gemini::{
                     get_gemini_env_path, get_gemini_settings_path, write_gemini_env_atomic,
                 };
                 let path = get_gemini_env_path();
@@ -446,7 +444,7 @@ mod tests {
 
         ProviderService::add(&state, AppType::Gemini, provider).expect("add should succeed");
 
-        let env = crate::gemini_config::read_gemini_env().expect("read gemini env");
+        let env = crate::config::gemini::read_gemini_env().expect("read gemini env");
         assert_eq!(
             env.get("CC_SWITCH_GEMINI_COMMON").map(String::as_str),
             Some("1"),
@@ -699,7 +697,7 @@ impl ProviderService {
         settings::ensure_security_auth_selected_type(Self::GOOGLE_OAUTH_SECURITY_SELECTED_TYPE)?;
 
         // 写入 Gemini 目录的 settings.json (~/.gemini/settings.json)
-        use crate::gemini_config::write_google_oauth_settings;
+        use crate::config::gemini::write_google_oauth_settings;
         write_google_oauth_settings()?;
 
         Ok(())
@@ -729,7 +727,7 @@ impl ProviderService {
         settings::ensure_security_auth_selected_type(Self::API_KEY_SECURITY_SELECTED_TYPE)?;
 
         // 写入 Gemini 目录的 settings.json (~/.gemini/settings.json)
-        use crate::gemini_config::write_generic_settings;
+        use crate::config::gemini::write_generic_settings;
         write_generic_settings()?;
 
         Ok(())
@@ -939,7 +937,7 @@ impl ProviderService {
                 } else {
                     None
                 };
-                let cfg_text = crate::codex_config::read_and_validate_codex_config_text()?;
+                let cfg_text = crate::config::codex::read_and_validate_codex_config_text()?;
 
                 {
                     let mut guard = state.config.write().map_err(AppError::from)?;
@@ -960,7 +958,7 @@ impl ProviderService {
                 state.save()?;
             }
             AppType::Gemini => {
-                use crate::gemini_config::{
+                use crate::config::gemini::{
                     env_to_json, get_gemini_env_path, get_gemini_settings_path, read_gemini_env,
                 };
 
@@ -1043,7 +1041,7 @@ impl ProviderService {
             }
             AppType::Gemini => {
                 // 新增
-                use crate::gemini_config::{
+                use crate::config::gemini::{
                     get_gemini_env_path, get_gemini_settings_path, read_gemini_env,
                 };
                 let path = get_gemini_env_path();
@@ -1222,7 +1220,7 @@ impl ProviderService {
                     ));
                 }
                 let auth: Value = read_json_file(&auth_path)?;
-                let config_str = crate::codex_config::read_and_validate_codex_config_text()?;
+                let config_str = crate::config::codex::read_and_validate_codex_config_text()?;
                 json!({ "auth": auth, "config": config_str })
             }
             AppType::Claude => {
@@ -1239,7 +1237,7 @@ impl ProviderService {
                 v
             }
             AppType::Gemini => {
-                use crate::gemini_config::{
+                use crate::config::gemini::{
                     env_to_json, get_gemini_env_path, get_gemini_settings_path, read_gemini_env,
                 };
 
@@ -1309,7 +1307,7 @@ impl ProviderService {
                     ));
                 }
                 let auth: Value = read_json_file(&auth_path)?;
-                let cfg_text = crate::codex_config::read_and_validate_codex_config_text()?;
+                let cfg_text = crate::config::codex::read_and_validate_codex_config_text()?;
                 Ok(json!({ "auth": auth, "config": cfg_text }))
             }
             AppType::Claude => {
@@ -1324,7 +1322,7 @@ impl ProviderService {
                 read_json_file(&path)
             }
             AppType::Gemini => {
-                use crate::gemini_config::{
+                use crate::config::gemini::{
                     env_to_json, get_gemini_env_path, get_gemini_settings_path, read_gemini_env,
                 };
 
@@ -1805,7 +1803,7 @@ impl ProviderService {
         let provider_id = generate_provider_id_from_name(&provider.name);
 
         // 读取现有 config.toml（保留 MCP 服务器等其他配置）
-        let base_text = crate::codex_config::read_and_validate_codex_config_text()?;
+        let base_text = crate::config::codex::read_and_validate_codex_config_text()?;
         let mut doc = if base_text.trim().is_empty() {
             toml_edit::DocumentMut::default()
         } else {
@@ -1985,7 +1983,7 @@ impl ProviderService {
         config: &mut MultiAppConfig,
         next_provider: &str,
     ) -> Result<(), AppError> {
-        use crate::gemini_config::{
+        use crate::config::gemini::{
             env_to_json, get_gemini_env_path, get_gemini_settings_path, read_gemini_env,
         };
 
@@ -2063,7 +2061,7 @@ impl ProviderService {
         provider: &Provider,
         common_config_snippet: Option<&str>,
     ) -> Result<(), AppError> {
-        use crate::gemini_config::{
+        use crate::config::gemini::{
             get_gemini_settings_path, json_to_env, validate_gemini_settings_strict,
             write_gemini_env_atomic,
         };
@@ -2202,13 +2200,13 @@ impl ProviderService {
                         ));
                     }
                     if let Some(cfg_text) = config_value.as_str() {
-                        crate::codex_config::validate_config_toml(cfg_text)?;
+                        crate::config::codex::validate_config_toml(cfg_text)?;
                     }
                 }
             }
             AppType::Gemini => {
                 // 新增
-                use crate::gemini_config::validate_gemini_settings;
+                use crate::config::gemini::validate_gemini_settings;
                 validate_gemini_settings(&provider.settings_config)?
             }
         }
@@ -2350,7 +2348,7 @@ impl ProviderService {
             }
             AppType::Gemini => {
                 // 新增
-                use crate::gemini_config::json_to_env;
+                use crate::config::gemini::json_to_env;
 
                 let env_map = json_to_env(&provider.settings_config)?;
 
@@ -2413,7 +2411,7 @@ impl ProviderService {
 
         match app_type {
             AppType::Codex => {
-                crate::codex_config::delete_codex_provider_config(
+                crate::config::codex::delete_codex_provider_config(
                     provider_id,
                     &provider_snapshot.name,
                 )?;

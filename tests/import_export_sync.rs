@@ -165,7 +165,7 @@ fn sync_enabled_to_codex_writes_enabled_servers() {
         }),
     );
 
-    cc_switch_lib::sync_enabled_to_codex(&config).expect("sync codex");
+    cc_switch_lib::sync_enabled_to(&AppType::Codex, &config).expect("sync codex");
 
     let path = cc_switch_lib::get_codex_config_path();
     assert!(path.exists(), "config.toml should be created");
@@ -205,7 +205,7 @@ mode = "dev"
         }),
     );
 
-    cc_switch_lib::sync_enabled_to_codex(&config).expect("sync codex");
+    cc_switch_lib::sync_enabled_to(&AppType::Codex, &config).expect("sync codex");
 
     let text = fs::read_to_string(&path).expect("read config.toml");
     // 顶层注释与非 MCP 键应保留
@@ -260,7 +260,7 @@ fn sync_enabled_to_codex_migrates_erroneous_mcp_dot_servers_to_mcp_servers() {
         }),
     );
 
-    cc_switch_lib::sync_enabled_to_codex(&config).expect("sync codex");
+    cc_switch_lib::sync_enabled_to(&AppType::Codex, &config).expect("sync codex");
     let text = fs::read_to_string(&path).expect("read config.toml");
     // 应迁移到顶层 mcp_servers，并移除错误的 mcp.servers 表
     assert!(
@@ -290,7 +290,7 @@ disabled = { type = "stdio", command = "noop" }
     .expect("seed config file");
 
     let config = MultiAppConfig::default(); // 无启用项
-    cc_switch_lib::sync_enabled_to_codex(&config).expect("sync codex");
+    cc_switch_lib::sync_enabled_to(&AppType::Codex, &config).expect("sync codex");
 
     let text = fs::read_to_string(&path).expect("read config.toml");
     assert!(
@@ -322,7 +322,8 @@ fn sync_enabled_to_codex_returns_error_on_invalid_toml() {
         }),
     );
 
-    let err = cc_switch_lib::sync_enabled_to_codex(&config).expect_err("sync should fail");
+    let err =
+        cc_switch_lib::sync_enabled_to(&AppType::Codex, &config).expect_err("sync should fail");
     match err {
         cc_switch_lib::AppError::Toml { path, .. } => {
             assert!(
@@ -486,7 +487,7 @@ url = "https://example.com"
     .expect("write codex config");
 
     let mut config = MultiAppConfig::default();
-    let changed = cc_switch_lib::import_from_codex(&mut config).expect("import codex");
+    let changed = cc_switch_lib::import_from(&AppType::Codex, &mut config).expect("import codex");
     assert!(changed >= 2, "should import both servers");
 
     // v3.7.0: 检查统一结构
@@ -563,7 +564,7 @@ command = "echo"
         },
     );
 
-    let changed = cc_switch_lib::import_from_codex(&mut config).expect("import codex");
+    let changed = cc_switch_lib::import_from(&AppType::Codex, &mut config).expect("import codex");
     assert!(changed >= 1, "should mark change for enabled flag");
 
     // v3.7.0: 检查统一结构
@@ -617,7 +618,7 @@ fn sync_claude_enabled_mcp_projects_to_user_config() {
         }),
     );
 
-    cc_switch_lib::sync_enabled_to_claude(&config).expect("sync Claude MCP");
+    cc_switch_lib::sync_enabled_to(&AppType::Claude, &config).expect("sync Claude MCP");
 
     let claude_path = cc_switch_lib::get_claude_mcp_path();
     assert!(claude_path.exists(), "claude config should exist");
@@ -685,7 +686,8 @@ fn import_from_claude_merges_into_config() {
         },
     );
 
-    let changed = cc_switch_lib::import_from_claude(&mut config).expect("import from claude");
+    let changed =
+        cc_switch_lib::import_from(&AppType::Claude, &mut config).expect("import from claude");
     assert!(changed >= 1, "should mark at least one change");
 
     // v3.7.0: 检查统一结构

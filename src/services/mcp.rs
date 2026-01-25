@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::app_config::{AppType, McpServer, MultiAppConfig};
+use crate::app_config::{AppType, McpServer};
 use crate::error::AppError;
 use crate::mcp;
 use crate::store::AppState;
@@ -115,7 +115,7 @@ impl McpService {
         let cfg = state.config.read()?;
 
         for app in server.apps.enabled_apps() {
-            Self::sync_server_to_app_internal(&cfg, server, &app)?;
+            Self::sync_server_to_app_internal(server, &app)?;
         }
 
         Ok(())
@@ -128,25 +128,11 @@ impl McpService {
         app: &AppType,
     ) -> Result<(), AppError> {
         let cfg = state.config.read()?;
-        Self::sync_server_to_app_internal(&cfg, server, app)
+        Self::sync_server_to_app_internal(server, app)
     }
 
-    fn sync_server_to_app_internal(
-        cfg: &MultiAppConfig,
-        server: &McpServer,
-        app: &AppType,
-    ) -> Result<(), AppError> {
-        match app {
-            AppType::Claude => {
-                mcp::sync_single_server_to_claude(cfg, &server.id, &server.server)?;
-            }
-            AppType::Codex => {
-                mcp::sync_single_server_to_codex(cfg, &server.id, &server.server)?;
-            }
-            AppType::Gemini => {
-                mcp::sync_single_server_to_gemini(cfg, &server.id, &server.server)?;
-            }
-        }
+    fn sync_server_to_app_internal(server: &McpServer, app: &AppType) -> Result<(), AppError> {
+        mcp::sync_single_server_to(app, &server.id, &server.server)?;
         Ok(())
     }
 
@@ -164,11 +150,7 @@ impl McpService {
     }
 
     fn remove_server_from_app(_state: &AppState, id: &str, app: &AppType) -> Result<(), AppError> {
-        match app {
-            AppType::Claude => mcp::remove_server_from_claude(id)?,
-            AppType::Codex => mcp::remove_server_from_codex(id)?,
-            AppType::Gemini => mcp::remove_server_from_gemini(id)?,
-        }
+        mcp::remove_server_from(app, id)?;
         Ok(())
     }
 
@@ -231,28 +213,10 @@ impl McpService {
         Ok(())
     }
 
-    /// 从 Claude 导入 MCP（v3.7.0 已更新为统一结构）
-    pub fn import_from_claude(state: &AppState) -> Result<usize, AppError> {
+    /// 从指定应用导入 MCP（v3.7.0 已更新为统一结构）
+    pub fn import_from_app(state: &AppState, app: AppType) -> Result<usize, AppError> {
         let mut cfg = state.config.write()?;
-        let count = mcp::import_from_claude(&mut cfg)?;
-        drop(cfg);
-        state.save()?;
-        Ok(count)
-    }
-
-    /// 从 Codex 导入 MCP（v3.7.0 已更新为统一结构）
-    pub fn import_from_codex(state: &AppState) -> Result<usize, AppError> {
-        let mut cfg = state.config.write()?;
-        let count = mcp::import_from_codex(&mut cfg)?;
-        drop(cfg);
-        state.save()?;
-        Ok(count)
-    }
-
-    /// 从 Gemini 导入 MCP（v3.7.0 已更新为统一结构）
-    pub fn import_from_gemini(state: &AppState) -> Result<usize, AppError> {
-        let mut cfg = state.config.write()?;
-        let count = mcp::import_from_gemini(&mut cfg)?;
+        let count = mcp::import_from(&app, &mut cfg)?;
         drop(cfg);
         state.save()?;
         Ok(count)
