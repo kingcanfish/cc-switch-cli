@@ -302,7 +302,7 @@ fn add_server(_app_type: AppType) -> Result<(), AppError> {
     println!("   cc-switch mcp import --app claude");
     println!();
     println!("2. Edit config file directly:");
-    println!("   ~/.cc-switch/config.json");
+    println!("   ~/.cc-switch-cli/config.json");
     println!();
     println!(
         "{}",
@@ -318,7 +318,7 @@ fn edit_server(_app_type: AppType, id: &str) -> Result<(), AppError> {
     println!("{}", error("MCP server editing is not yet implemented."));
     println!(
         "{}",
-        info("Please edit ~/.cc-switch/config.json directly for now.")
+        info("Please edit ~/.cc-switch-cli/config.json directly for now.")
     );
     Ok(())
 }

@@ -657,7 +657,7 @@ impl ProviderService {
     ///
     /// # 写入两处 settings.json 的原因
     ///
-    /// 1. **`~/.cc-switch/settings.json`** (应用级配置):
+    /// 1. **`~/.cc-switch-cli/settings.json`** (应用级配置):
     ///    - CC-Switch 应用的全局设置
     ///    - 确保应用知道当前使用的认证类型
     ///    - 用于 UI 显示和其他应用逻辑
@@ -693,7 +693,7 @@ impl ProviderService {
             return Ok(());
         }
 
-        // 写入应用级别的 settings.json (~/.cc-switch/settings.json)
+        // 写入应用级别的 settings.json (~/.cc-switch-cli/settings.json)
         settings::ensure_security_auth_selected_type(Self::GOOGLE_OAUTH_SECURITY_SELECTED_TYPE)?;
 
         // 写入 Gemini 目录的 settings.json (~/.gemini/settings.json)
@@ -723,7 +723,7 @@ impl ProviderService {
     /// }
     /// ```
     pub(crate) fn ensure_api_key_security_flag(_provider: &Provider) -> Result<(), AppError> {
-        // 写入应用级别的 settings.json (~/.cc-switch/settings.json)
+        // 写入应用级别的 settings.json (~/.cc-switch-cli/settings.json)
         settings::ensure_security_auth_selected_type(Self::API_KEY_SECURITY_SELECTED_TYPE)?;
 
         // 写入 Gemini 目录的 settings.json (~/.gemini/settings.json)

@@ -181,7 +181,7 @@ fn switch_packycode_gemini_updates_security_selected_type() {
     ProviderService::switch(&state, AppType::Gemini, "packy-gemini")
         .expect("switching to PackyCode Gemini should succeed");
 
-    let settings_path = home.join(".cc-switch").join("settings.json");
+    let settings_path = home.join(".cc-switch-cli").join("settings.json");
     assert!(
         settings_path.exists(),
         "settings.json should exist at {}",
@@ -237,7 +237,7 @@ fn packycode_partner_meta_triggers_security_flag_even_without_keywords() {
     ProviderService::switch(&state, AppType::Gemini, "packy-meta")
         .expect("switching to partner meta provider should succeed");
 
-    let settings_path = home.join(".cc-switch").join("settings.json");
+    let settings_path = home.join(".cc-switch-cli").join("settings.json");
     assert!(
         settings_path.exists(),
         "settings.json should exist at {}",
@@ -292,7 +292,7 @@ fn switch_google_official_gemini_sets_oauth_security() {
     ProviderService::switch(&state, AppType::Gemini, "google-official")
         .expect("switching to Google official Gemini should succeed");
 
-    let settings_path = home.join(".cc-switch").join("settings.json");
+    let settings_path = home.join(".cc-switch-cli").join("settings.json");
     assert!(
         settings_path.exists(),
         "settings.json should exist at {}",

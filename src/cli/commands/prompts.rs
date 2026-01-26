@@ -307,7 +307,7 @@ fn create_prompt(_app_type: AppType) -> Result<(), AppError> {
     println!("{}", info("For now, you can:"));
     println!();
     println!("1. Edit the configuration file directly:");
-    println!("   ~/.cc-switch/config.json");
+    println!("   ~/.cc-switch-cli/config.json");
     println!();
     println!("2. Or add a prompt preset manually to the prompts section.");
     println!();
@@ -360,7 +360,7 @@ fn edit_prompt(_app_type: AppType, id: &str) -> Result<(), AppError> {
     println!("{}", error("Prompt editing is not yet implemented."));
     println!(
         "{}",
-        info("Please edit ~/.cc-switch/config.json directly for now.")
+        info("Please edit ~/.cc-switch-cli/config.json directly for now.")
     );
     println!();
     println!(

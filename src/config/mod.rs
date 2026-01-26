@@ -18,7 +18,7 @@ pub trait AppConfigPaths {
     }
 }
 
-/// 获取应用配置目录路径 (~/.cc-switch)
+/// 获取应用配置目录路径 (~/.cc-switch-cli)
 pub fn get_app_config_dir() -> PathBuf {
     // CLI mode: no app store override, always use default
     // if let Some(custom) = crate::app_store::get_app_config_dir_override() {
@@ -27,7 +27,7 @@ pub fn get_app_config_dir() -> PathBuf {
 
     dirs::home_dir()
         .expect("无法获取用户主目录")
-        .join(".cc-switch")
+        .join(".cc-switch-cli")
 }
 
 /// 获取应用配置文件路径

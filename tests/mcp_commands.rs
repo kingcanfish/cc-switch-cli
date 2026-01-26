@@ -59,7 +59,7 @@ fn import_mcp_from_claude_creates_config_and_enables_servers() {
     );
     drop(guard);
 
-    let config_path = home.join(".cc-switch").join("config.json");
+    let config_path = home.join(".cc-switch-cli").join("config.json");
     assert!(
         config_path.exists(),
         "state.save should persist config.json when changes detected"
@@ -90,7 +90,7 @@ fn import_mcp_from_claude_invalid_json_preserves_state() {
         other => panic!("unexpected error variant: {other:?}"),
     }
 
-    let config_path = home.join(".cc-switch").join("config.json");
+    let config_path = home.join(".cc-switch-cli").join("config.json");
     assert!(
         !config_path.exists(),
         "failed import should not persist config.json"

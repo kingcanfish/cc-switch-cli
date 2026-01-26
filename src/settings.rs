@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{OnceLock, RwLock};
 
 use crate::error::AppError;
@@ -53,14 +53,34 @@ pub struct AppSettings {
     pub custom_endpoints_codex: HashMap<String, CustomEndpoint>,
 }
 
+const SETTINGS_DIR: &str = ".cc-switch-cli";
+
 impl AppSettings {
     fn settings_path() -> PathBuf {
         // settings.json 必须使用固定路径，不能被 app_config_dir 覆盖
         // 否则会造成循环依赖：读取 settings 需要知道路径，但路径在 settings 中
         dirs::home_dir()
             .expect("无法获取用户主目录")
-            .join(".cc-switch")
+            .join(SETTINGS_DIR)
             .join("settings.json")
+    }
+
+    fn read_settings_at(path: &Path) -> Option<Self> {
+        let content = fs::read_to_string(path).ok()?;
+        match serde_json::from_str::<AppSettings>(&content) {
+            Ok(mut settings) => {
+                settings.normalize_paths();
+                Some(settings)
+            }
+            Err(err) => {
+                log::warn!(
+                    "解析设置文件失败，忽略该文件。路径: {}, 错误: {}",
+                    path.display(),
+                    err
+                );
+                None
+            }
+        }
     }
 
     fn normalize_paths(&mut self) {
@@ -95,24 +115,7 @@ impl AppSettings {
 
     pub fn load() -> Self {
         let path = Self::settings_path();
-        if let Ok(content) = fs::read_to_string(&path) {
-            match serde_json::from_str::<AppSettings>(&content) {
-                Ok(mut settings) => {
-                    settings.normalize_paths();
-                    settings
-                }
-                Err(err) => {
-                    log::warn!(
-                        "解析设置文件失败，将使用默认设置。路径: {}, 错误: {}",
-                        path.display(),
-                        err
-                    );
-                    Self::default()
-                }
-            }
-        } else {
-            Self::default()
-        }
+        Self::read_settings_at(&path).unwrap_or_default()
     }
 
     pub fn save(&self) -> Result<(), AppError> {

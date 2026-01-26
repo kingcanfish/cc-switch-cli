@@ -270,7 +270,7 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 
 ### Core Design
 
-- **SSOT**: All config in `~/.cc-switch/config.json`, live configs are generated artifacts
+- **SSOT**: All config in `~/.cc-switch-cli/config.json`, live configs are generated artifacts
 - **Atomic Writes**: Temp file + rename pattern prevents corruption
 - **Service Layer Reuse**: 100% reused from original GUI version
 - **Concurrency Safe**: RwLock with scoped guards
@@ -278,9 +278,9 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 ### Configuration Files
 
 **CC-Switch Storage:**
-- `~/.cc-switch/config.json` - Main configuration (SSOT)
-- `~/.cc-switch/settings.json` - Settings
-- `~/.cc-switch/backups/` - Auto-rotation (keep 10)
+- `~/.cc-switch-cli/config.json` - Main configuration (SSOT)
+- `~/.cc-switch-cli/settings.json` - Settings
+- `~/.cc-switch-cli/backups/` - Auto-rotation (keep 10)
 
 **Live Configs:**
 - Claude: `~/.claude/settings.json`, `~/.claude.json` (MCP), `~/.claude/CLAUDE.md` (prompts)

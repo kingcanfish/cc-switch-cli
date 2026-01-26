@@ -23,7 +23,7 @@ pub fn ensure_test_home() -> &'static Path {
 /// 清理测试目录中生成的配置文件与缓存。
 pub fn reset_test_fs() {
     let home = ensure_test_home();
-    for sub in [".claude", ".codex", ".cc-switch", ".gemini"] {
+    for sub in [".claude", ".codex", ".cc-switch-cli", ".gemini"] {
         let path = home.join(sub);
         if path.exists() {
             if let Err(err) = std::fs::remove_dir_all(&path) {

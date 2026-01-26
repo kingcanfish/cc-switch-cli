@@ -719,7 +719,7 @@ fn create_backup_skips_missing_file() {
     let _guard = test_mutex().lock().expect("acquire test mutex");
     reset_test_fs();
     let home = ensure_test_home();
-    let config_path = home.join(".cc-switch").join("config.json");
+    let config_path = home.join(".cc-switch-cli").join("config.json");
 
     // 未创建文件时应返回空字符串，不报错
     let result = ConfigService::create_backup(&config_path, None).expect("create backup");
@@ -734,7 +734,7 @@ fn create_backup_generates_snapshot_file() {
     let _guard = test_mutex().lock().expect("acquire test mutex");
     reset_test_fs();
     let home = ensure_test_home();
-    let config_dir = home.join(".cc-switch");
+    let config_dir = home.join(".cc-switch-cli");
     let config_path = config_dir.join("config.json");
     fs::create_dir_all(&config_dir).expect("prepare config dir");
     fs::write(&config_path, r#"{"version":2}"#).expect("write config file");
@@ -764,7 +764,7 @@ fn create_backup_retains_only_latest_entries() {
     let _guard = test_mutex().lock().expect("acquire test mutex");
     reset_test_fs();
     let home = ensure_test_home();
-    let config_dir = home.join(".cc-switch");
+    let config_dir = home.join(".cc-switch-cli");
     let config_path = config_dir.join("config.json");
     fs::create_dir_all(&config_dir).expect("prepare config dir");
     fs::write(&config_path, r#"{"version":3}"#).expect("write config file");
@@ -819,7 +819,7 @@ fn import_config_from_path_overwrites_state_and_creates_backup() {
     reset_test_fs();
     let home = ensure_test_home();
 
-    let config_dir = home.join(".cc-switch");
+    let config_dir = home.join(".cc-switch-cli");
     fs::create_dir_all(&config_dir).expect("create config dir");
     let config_path = config_dir.join("config.json");
     fs::write(&config_path, r#"{"version":1}"#).expect("seed original config");
@@ -905,7 +905,7 @@ fn import_config_from_path_invalid_json_returns_error() {
     reset_test_fs();
     let home = ensure_test_home();
 
-    let config_dir = home.join(".cc-switch");
+    let config_dir = home.join(".cc-switch-cli");
     fs::create_dir_all(&config_dir).expect("create config dir");
 
     let invalid_path = config_dir.join("broken.json");
@@ -973,7 +973,7 @@ fn sync_gemini_packycode_sets_security_selected_type() {
     ConfigService::sync_current_providers_to_live(&mut config)
         .expect("syncing gemini live should succeed");
 
-    let settings_path = home.join(".cc-switch").join("settings.json");
+    let settings_path = home.join(".cc-switch-cli").join("settings.json");
     assert!(
         settings_path.exists(),
         "settings.json should exist at {}",
@@ -1023,13 +1023,13 @@ fn sync_gemini_google_official_sets_oauth_security() {
     ConfigService::sync_current_providers_to_live(&mut config)
         .expect("syncing google official gemini should succeed");
 
-    let cc_settings = home.join(".cc-switch").join("settings.json");
+    let cc_settings = home.join(".cc-switch-cli").join("settings.json");
     assert!(
         cc_settings.exists(),
         "app settings should exist at {}",
         cc_settings.display()
     );
-    let cc_raw = std::fs::read_to_string(&cc_settings).expect("read .cc-switch settings");
+    let cc_raw = std::fs::read_to_string(&cc_settings).expect("read .cc-switch-cli settings");
     let cc_value: serde_json::Value = serde_json::from_str(&cc_raw).expect("parse app settings");
     assert_eq!(
         cc_value

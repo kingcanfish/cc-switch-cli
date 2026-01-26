@@ -270,7 +270,7 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 
 ### 核心设计
 
-- **SSOT**：所有配置存于 `~/.cc-switch/config.json`，实时配置是生成的产物
+- **SSOT**：所有配置存于 `~/.cc-switch-cli/config.json`，实时配置是生成的产物
 - **原子写入**：临时文件 + 重命名模式防止损坏
 - **服务层复用**：100% 复用原 GUI 版本
 - **并发安全**：RwLock 配合作用域守卫
@@ -278,9 +278,9 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 ### 配置文件
 
 **CC-Switch 存储：**
-- `~/.cc-switch/config.json` - 主配置（SSOT）
-- `~/.cc-switch/settings.json` - 设置
-- `~/.cc-switch/backups/` - 自动轮换（保留 10 个）
+- `~/.cc-switch-cli/config.json` - 主配置（SSOT）
+- `~/.cc-switch-cli/settings.json` - 设置
+- `~/.cc-switch-cli/backups/` - 自动轮换（保留 10 个）
 
 **实时配置：**
 - Claude: `~/.claude/settings.json`, `~/.claude.json` (MCP), `~/.claude/CLAUDE.md` (提示词)
