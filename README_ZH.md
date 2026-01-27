@@ -26,21 +26,6 @@
 
 ---
 
-## 📸 截图预览
-
-<table>
-  <tr>
-    <th>交互式主界面</th>
-    <th>供应商管理</th>
-  </tr>
-  <tr>
-    <td><img src="assets/screenshots/main-ch.png" alt="主界面" width="100%"/></td>
-    <td><img src="assets/screenshots/add-ch.png" alt="供应商管理" width="100%"/></td>
-  </tr>
-</table>
-
----
-
 ## 🚀 快速开始
 
 **交互模式（推荐）**
@@ -264,7 +249,7 @@ move cc-switch.exe C:\Windows\System32\
 **构建：**
 ```bash
 git clone https://github.com/saladday/cc-switch-cli.git
-cd cc-switch-cli/src-tauri
+cd cc-switch-cli
 cargo build --release
 
 # 二进制位置：./target/release/cc-switch
@@ -285,7 +270,7 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 
 ### 核心设计
 
-- **SSOT**：所有配置存于 `~/.cc-switch/config.json`，实时配置是生成的产物
+- **SSOT**：所有配置存于 `~/.cc-switch-cli/config.json`，实时配置是生成的产物
 - **原子写入**：临时文件 + 重命名模式防止损坏
 - **服务层复用**：100% 复用原 GUI 版本
 - **并发安全**：RwLock 配合作用域守卫
@@ -293,9 +278,9 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 ### 配置文件
 
 **CC-Switch 存储：**
-- `~/.cc-switch/config.json` - 主配置（SSOT）
-- `~/.cc-switch/settings.json` - 设置
-- `~/.cc-switch/backups/` - 自动轮换（保留 10 个）
+- `~/.cc-switch-cli/config.json` - 主配置（SSOT）
+- `~/.cc-switch-cli/settings.json` - 设置
+- `~/.cc-switch-cli/backups/` - 自动轮换（保留 10 个）
 
 **实时配置：**
 - Claude: `~/.claude/settings.json`, `~/.claude.json` (MCP), `~/.claude/CLAUDE.md` (提示词)
@@ -380,8 +365,6 @@ cc-switch --app codex provider list
 ### 开发命令
 
 ```bash
-cd src-tauri
-
 cargo run                            # 开发模式
 cargo run -- provider list           # 运行特定命令
 cargo build --release                # 构建 release
@@ -394,7 +377,7 @@ cargo test                           # 运行测试
 ### 代码结构
 
 ```
-src-tauri/src/
+src/
 ├── cli/
 │   ├── commands/          # CLI 子命令（provider, mcp, prompts, config）
 │   ├── interactive/       # 交互式 TUI 模式

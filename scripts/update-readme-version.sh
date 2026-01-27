@@ -49,7 +49,7 @@ log_error() {
 # ==============================================================================
 
 get_cargo_version() {
-    local cargo_toml="src-tauri/Cargo.toml"
+    local cargo_toml="Cargo.toml"
 
     if [[ ! -f "$cargo_toml" ]]; then
         log_error "Cargo.toml not found at: $cargo_toml"
@@ -181,7 +181,7 @@ main() {
 
     if [[ $# -eq 0 ]]; then
         # No argument provided, read from Cargo.toml
-        log_info "Reading version from src-tauri/Cargo.toml..."
+        log_info "Reading version from Cargo.toml..."
         new_version=$(get_cargo_version)
         log_success "Detected version: $new_version"
     elif [[ $# -eq 1 ]]; then

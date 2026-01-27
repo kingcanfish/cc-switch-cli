@@ -11,7 +11,7 @@
 
 ## 背景与现状
 - 前端已完成重构，后端 (Tauri + Rust) 仍维持历史结构。
-- 核心文件集中在 `src-tauri/src/commands.rs`、`lib.rs` 等超大文件中，业务逻辑与界面事件耦合严重。
+- 核心文件集中在 `src/commands.rs`、`lib.rs` 等超大文件中，业务逻辑与界面事件耦合严重。
 - 测试覆盖率低，只有零散单元测试，缺乏集成验证。
 
 ## 问题确认
@@ -68,12 +68,12 @@
 
 ## 实施进度
 - **阶段 1：统一错误处理 ✅**  
-  - 引入 `thiserror` 并在 `src-tauri/src/error.rs` 定义 `AppError`，提供常用构造函数和 `From<AppError> for String`，保留错误链路。  
+  - 引入 `thiserror` 并在 `src/error.rs` 定义 `AppError`，提供常用构造函数和 `From<AppError> for String`，保留错误链路。  
   - 配置、存储、同步等核心模块（`config.rs`、`app_config.rs`、`app_store.rs`、`store.rs`、`codex_config.rs`、`claude_mcp.rs`、`claude_plugin.rs`、`import_export.rs`、`mcp.rs`、`migration.rs`、`speedtest.rs`、`usage_script.rs`、`settings.rs`、`lib.rs` 等）已统一返回 `Result<_, AppError>`，避免字符串错误丢失上下文。  
   - Tauri 命令层继续返回 `Result<_, String>`，通过 `?` + `Into<String>` 统一转换，前端无需调整。  
   - `cargo check` 通过，`rg "Result<[^>]+, String"` 巡检确认除命令层外已无字符串错误返回。
 - **阶段 2：拆分命令层 ✅**  
-  - 已将单一 `src-tauri/src/commands.rs` 拆分为 `commands/{provider,mcp,config,settings,misc,plugin}.rs` 并通过 `commands/mod.rs` 统一导出，保持对外 API 不变。  
+  - 已将单一 `src/commands.rs` 拆分为 `commands/{provider,mcp,config,settings,misc,plugin}.rs` 并通过 `commands/mod.rs` 统一导出，保持对外 API 不变。  
   - 每个文件聚焦单一功能域（供应商、MCP、配置、设置、杂项、插件），命令函数平均 150-250 行，可读性与后续维护性显著提升。  
   - 相关依赖调整后 `cargo check` 通过，静态巡检确认无重复定义或未注册命令。
 - **阶段 3：补充测试 ✅**  
@@ -101,7 +101,7 @@
 ## 渐进式重构路线
 
 ### 阶段 1：统一错误处理（高收益 / 低风险）
-- 新增 `src-tauri/src/error.rs`，定义 `AppError`。  
+- 新增 `src/error.rs`，定义 `AppError`。  
 - 底层文件 IO、配置解析等函数返回 `Result<T, AppError>`。  
 - 命令层通过 `?` 自动传播，最终 `.map_err(Into::into)`。
 - 预估 3-5 天，立即启动。
@@ -113,7 +113,7 @@
 - 预估 5-7 天，可并行进行部分重构。
 
 ### 阶段 3：补充测试（中收益 / 中风险）
-- 引入 `tests/` 或 `src-tauri/tests/` 集成测试，覆盖供应商切换、MCP 同步、配置迁移。  
+- 引入 `tests/` 或 `tests/` 集成测试，覆盖供应商切换、MCP 同步、配置迁移。  
 - 使用 `tempfile`/`tempdir` 隔离文件系统，组合少量回归脚本。  
 - 预估 5-7 天，为后续重构提供安全网。
 

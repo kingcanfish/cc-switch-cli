@@ -19,3 +19,5 @@ vitest-report.json
 /blog
 *.bak
 skill.md
+/target/
+/gen/schemas

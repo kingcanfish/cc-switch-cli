@@ -26,21 +26,6 @@ This project is a **CLI fork** of [CC-Switch](https://github.com/farion1231/cc-s
 
 ---
 
-## 📸 Screenshots
-
-<table>
-  <tr>
-    <th>Interactive Main Menu</th>
-    <th>Provider Management</th>
-  </tr>
-  <tr>
-    <td><img src="assets/screenshots/main-en.png" alt="Main Menu" width="100%"/></td>
-    <td><img src="assets/screenshots/add-en.png" alt="Provider Management" width="100%"/></td>
-  </tr>
-</table>
-
----
-
 ## 🚀 Quick Start
 
 **Interactive Mode (Recommended)**
@@ -264,7 +249,7 @@ move cc-switch.exe C:\Windows\System32\
 **Build:**
 ```bash
 git clone https://github.com/saladday/cc-switch-cli.git
-cd cc-switch-cli/src-tauri
+cd cc-switch-cli
 cargo build --release
 
 # Binary location: ./target/release/cc-switch
@@ -285,7 +270,7 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 
 ### Core Design
 
-- **SSOT**: All config in `~/.cc-switch/config.json`, live configs are generated artifacts
+- **SSOT**: All config in `~/.cc-switch-cli/config.json`, live configs are generated artifacts
 - **Atomic Writes**: Temp file + rename pattern prevents corruption
 - **Service Layer Reuse**: 100% reused from original GUI version
 - **Concurrency Safe**: RwLock with scoped guards
@@ -293,9 +278,9 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 ### Configuration Files
 
 **CC-Switch Storage:**
-- `~/.cc-switch/config.json` - Main configuration (SSOT)
-- `~/.cc-switch/settings.json` - Settings
-- `~/.cc-switch/backups/` - Auto-rotation (keep 10)
+- `~/.cc-switch-cli/config.json` - Main configuration (SSOT)
+- `~/.cc-switch-cli/settings.json` - Settings
+- `~/.cc-switch-cli/backups/` - Auto-rotation (keep 10)
 
 **Live Configs:**
 - Claude: `~/.claude/settings.json`, `~/.claude.json` (MCP), `~/.claude/CLAUDE.md` (prompts)
@@ -380,8 +365,6 @@ Please open an issue on our [GitHub Issues](https://github.com/saladday/cc-switc
 ### Commands
 
 ```bash
-cd src-tauri
-
 cargo run                            # Development mode
 cargo run -- provider list           # Run specific command
 cargo build --release                # Build release
@@ -394,7 +377,7 @@ cargo test                           # Run tests
 ### Code Structure
 
 ```
-src-tauri/src/
+src/
 ├── cli/
 │   ├── commands/          # CLI subcommands (provider, mcp, prompts, config)
 │   ├── interactive/       # Interactive TUI mode
