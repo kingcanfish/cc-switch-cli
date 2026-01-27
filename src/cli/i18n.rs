@@ -603,7 +603,7 @@ pub mod texts {
 
     // Provider Commands
     pub fn no_providers_hint() -> &'static str {
-        "Use 'cc-switch provider add' to create a new provider."
+        "Use 'cc-switch-cli provider add' to create a new provider."
     }
 
     pub fn app_config_not_found(app: &str) -> String {

@@ -126,7 +126,7 @@ impl SkillService {
 
         Ok(Self {
             http_client: Client::builder()
-                .user_agent("cc-switch")
+                .user_agent("cc-switch-cli")
                 // 将单次请求超时时间控制在 10 秒以内，避免无效链接导致长时间卡住
                 .timeout(std::time::Duration::from_secs(10))
                 .build()?,

@@ -194,7 +194,7 @@ fn set_common(
     } else {
         println!(
             "{}",
-            info("Tip: run `cc-switch provider switch <id>` to re-apply settings to the live config.")
+            info("Tip: run `cc-switch-cli provider switch <id>` to re-apply settings to the live config.")
         );
     }
 
@@ -222,7 +222,7 @@ fn clear_common(app_type: AppType, apply: bool) -> Result<(), AppError> {
     } else {
         println!(
             "{}",
-            info("Tip: run `cc-switch provider switch <id>` to re-apply settings to the live config.")
+            info("Tip: run `cc-switch-cli provider switch <id>` to re-apply settings to the live config.")
         );
     }
 
@@ -262,7 +262,7 @@ fn show_path() -> Result<(), AppError> {
         }
     } else {
         println!("\n{} Configuration file does not exist", error("✗"));
-        println!("{}", info("Run cc-switch to create default configuration."));
+        println!("{}", info("Run cc-switch-cli to create default configuration."));
     }
 
     // Show backup directory
@@ -517,7 +517,7 @@ fn restore_config(backup_id: Option<&str>, file_path: Option<&Path>) -> Result<(
     if backups.is_empty() {
         println!();
         println!("{}", info("No backups found."));
-        println!("{}", info("Create a backup first: cc-switch config backup"));
+        println!("{}", info("Create a backup first: cc-switch-cli config backup"));
         return Ok(());
     }
 
@@ -645,7 +645,7 @@ fn reset_config() -> Result<(), AppError> {
     println!("All your providers, MCP servers, and settings will be lost.");
     println!();
     println!("{}", info("Consider creating a backup first:"));
-    println!("  cc-switch config backup");
+    println!("  cc-switch-cli config backup");
     println!();
 
     let confirm = inquire::Confirm::new("Are you sure you want to reset to default configuration?")
@@ -675,7 +675,7 @@ fn reset_config() -> Result<(), AppError> {
         println!("{}", info(&format!("  Backup created: {}", backup_id)));
         println!(
             "{}",
-            info("  You can restore it later using: cc-switch config restore")
+            info("  You can restore it later using: cc-switch-cli config restore")
         );
     }
 

@@ -11,7 +11,7 @@ use crate::app_config::AppType;
 
 #[derive(Parser)]
 #[command(
-    name = "cc-switch",
+    name = "cc-switch-cli",
     version,
     about = "All-in-One Assistant for Claude Code, Codex & Gemini CLI",
     long_about = "Unified management for Claude Code, Codex & Gemini CLI provider configurations, MCP servers, Skills extensions, and system prompts.\n\nRun without arguments to enter interactive mode."

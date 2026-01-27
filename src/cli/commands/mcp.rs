@@ -73,7 +73,7 @@ fn list_servers(app_type: AppType) -> Result<(), AppError> {
 
     if servers.is_empty() {
         println!("{}", info("No MCP servers found."));
-        println!("Use 'cc-switch mcp add' or 'cc-switch mcp import' to add servers.");
+        println!("Use 'cc-switch-cli mcp add' or 'cc-switch-cli mcp import' to add servers.");
         return Ok(());
     }
 
@@ -299,7 +299,7 @@ fn add_server(_app_type: AppType) -> Result<(), AppError> {
     println!("{}", info("For now, please use one of these methods:"));
     println!();
     println!("1. Import from existing config:");
-    println!("   cc-switch mcp import --app claude");
+    println!("   cc-switch-cli mcp import --app claude");
     println!();
     println!("2. Edit config file directly:");
     println!("   ~/.cc-switch-cli/config.json");

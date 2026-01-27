@@ -67,7 +67,7 @@ fn list_prompts(app_type: AppType) -> Result<(), AppError> {
 
     if prompts.is_empty() {
         println!("{}", info("No prompt presets found."));
-        println!("Use 'cc-switch prompts create' to create a new prompt preset.");
+        println!("Use 'cc-switch-cli prompts create' to create a new prompt preset.");
         return Ok(());
     }
 
@@ -170,7 +170,7 @@ fn show_current(app_type: AppType) -> Result<(), AppError> {
         }
         None => {
             println!("{}", info("No active prompt preset."));
-            println!("Use 'cc-switch prompts activate <id>' to activate a prompt.");
+            println!("Use 'cc-switch-cli prompts activate <id>' to activate a prompt.");
         }
     }
 
@@ -348,7 +348,7 @@ fn deactivate_prompt(app_type: AppType) -> Result<(), AppError> {
         }
         None => {
             println!("{}", info("No active prompt to deactivate."));
-            println!("Use 'cc-switch prompts activate <id>' to activate a prompt preset.");
+            println!("Use 'cc-switch-cli prompts activate <id>' to activate a prompt preset.");
         }
     }
 
@@ -365,7 +365,7 @@ fn edit_prompt(_app_type: AppType, id: &str) -> Result<(), AppError> {
     println!();
     println!(
         "{}",
-        info("Tip: Use 'cc-switch prompts show <id>' to view the current content.")
+        info("Tip: Use 'cc-switch-cli prompts show <id>' to view the current content.")
     );
     Ok(())
 }
