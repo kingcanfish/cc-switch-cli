@@ -2,7 +2,7 @@
 
 All notable changes to CC Switch CLI will be documented in this file.
 
-**Note:** This is a CLI fork of the original [CC-Switch](https://github.com/farion1231/cc-switch) project, maintained by [saladday](https://github.com/saladday).
+**Note:** This is a CLI fork of the original [CC-Switch](https://github.com/farion1231/cc-switch) project, maintained by [kingcanfish](https://github.com/kingcanfish).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -88,7 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Common Config Snippet**: Add `cc-switch config common` to manage per-app common config snippets (useful for shared Claude settings like `env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` and `includeCoAuthoredBy`). Fixes #11.
+- **Common Config Snippet**: Add `cc-switch-cli config common` to manage per-app common config snippets (useful for shared Claude settings like `env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` and `includeCoAuthoredBy`). Fixes #11.
 
 ### Changed
 
@@ -216,7 +216,7 @@ Complete migration from Tauri GUI application to standalone CLI tool. This is a 
 ### New Features
 
 - **Dual Interface Modes**: Command-line mode + Interactive TUI mode
-- **Default Interactive Mode**: Run `cc-switch` without arguments to enter interactive mode
+- **Default Interactive Mode**: Run `cc-switch-cli` without arguments to enter interactive mode
 - **Provider Management**: list, add, edit, delete, switch, duplicate, speedtest
 - **MCP Server Management**: list, add, edit, delete, enable/disable, sync, import/export
 - **Prompts Management**: list, activate, show, create, edit, delete

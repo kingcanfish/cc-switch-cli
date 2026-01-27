@@ -24,40 +24,40 @@ jobs:
           - os: macos-14
             platform: darwin-arm64
             target: aarch64-apple-darwin
-            binary: cc-switch
+            binary: cc-switch-cli
           # macOS x86_64
           - os: macos-14
             platform: darwin-x64
             target: x86_64-apple-darwin
-            binary: cc-switch
+            binary: cc-switch-cli
           # Windows x86_64
           - os: windows-2022
             platform: windows-x64
             target: x86_64-pc-windows-msvc
-            binary: cc-switch.exe
+            binary: cc-switch-cli.exe
           # Linux x86_64 - MUSL (recommended)
           - os: ubuntu-22.04
             platform: linux-x64-musl
             target: x86_64-unknown-linux-musl
-            binary: cc-switch
+            binary: cc-switch-cli
             use_cross: true
           # Linux x86_64 - GLIBC (fallback)
           - os: ubuntu-22.04
             platform: linux-x64
             target: x86_64-unknown-linux-gnu
-            binary: cc-switch
+            binary: cc-switch-cli
             use_cross: false
           # Linux ARM64 - MUSL (recommended)
           - os: ubuntu-22.04
             platform: linux-arm64-musl
             target: aarch64-unknown-linux-musl
-            binary: cc-switch
+            binary: cc-switch-cli
             use_cross: true
           # Linux ARM64 - GLIBC (fallback)
           - os: ubuntu-22.04
             platform: linux-arm64
             target: aarch64-unknown-linux-gnu
-            binary: cc-switch
+            binary: cc-switch-cli
             use_cross: true
 
     steps:
@@ -72,7 +72,6 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
           key: ${{ matrix.target }}
 
       - name: Install cross
@@ -90,19 +89,17 @@ jobs:
 
       - name: Build with cross
         if: matrix.use_cross == true
-        working-directory: src-tauri
         run: cross build --release --target ${{ matrix.target }}
 
       - name: Build with cargo
         if: matrix.use_cross != true
-        working-directory: src-tauri
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Prepare binary
         shell: bash
         run: |
           mkdir -p dist
-          cp src-tauri/target/${{ matrix.target }}/release/${{ matrix.binary }} dist/
+          cp target/${{ matrix.target }}/release/${{ matrix.binary }} dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -132,15 +129,15 @@ jobs:
       - name: Create universal binary
         run: |
           mkdir -p universal
-          lipo -create -output universal/cc-switch arm64/cc-switch x64/cc-switch
-          chmod +x universal/cc-switch
-          file universal/cc-switch
+          lipo -create -output universal/cc-switch-cli arm64/cc-switch-cli x64/cc-switch-cli
+          chmod +x universal/cc-switch-cli
+          file universal/cc-switch-cli
 
       - name: Upload universal artifact
         uses: actions/upload-artifact@v4
         with:
           name: cc-switch-cli-darwin-universal
-          path: universal/cc-switch
+          path: universal/cc-switch-cli
           if-no-files-found: error
 
   release:
@@ -164,52 +161,52 @@ jobs:
           VERSION="${GITHUB_REF_NAME}"
 
           # macOS Universal
-          if [ -f "artifacts/cc-switch-cli-darwin-universal/cc-switch" ]; then
+          if [ -f "artifacts/cc-switch-cli-darwin-universal/cc-switch-cli" ]; then
             tar -czf release-assets/cc-switch-cli-${VERSION}-darwin-universal.tar.gz \
-              -C artifacts/cc-switch-cli-darwin-universal cc-switch
+              -C artifacts/cc-switch-cli-darwin-universal cc-switch-cli
           fi
 
           # macOS ARM64
-          if [ -f "artifacts/cc-switch-cli-darwin-arm64/cc-switch" ]; then
+          if [ -f "artifacts/cc-switch-cli-darwin-arm64/cc-switch-cli" ]; then
             tar -czf release-assets/cc-switch-cli-${VERSION}-darwin-arm64.tar.gz \
-              -C artifacts/cc-switch-cli-darwin-arm64 cc-switch
+              -C artifacts/cc-switch-cli-darwin-arm64 cc-switch-cli
           fi
 
           # macOS x64
-          if [ -f "artifacts/cc-switch-cli-darwin-x64/cc-switch" ]; then
+          if [ -f "artifacts/cc-switch-cli-darwin-x64/cc-switch-cli" ]; then
             tar -czf release-assets/cc-switch-cli-${VERSION}-darwin-x64.tar.gz \
-              -C artifacts/cc-switch-cli-darwin-x64 cc-switch
+              -C artifacts/cc-switch-cli-darwin-x64 cc-switch-cli
           fi
 
           # Windows
-          if [ -f "artifacts/cc-switch-cli-windows-x64/cc-switch.exe" ]; then
+          if [ -f "artifacts/cc-switch-cli-windows-x64/cc-switch-cli.exe" ]; then
             cd artifacts/cc-switch-cli-windows-x64
-            zip ../../release-assets/cc-switch-cli-${VERSION}-windows-x64.zip cc-switch.exe
+            zip ../../release-assets/cc-switch-cli-${VERSION}-windows-x64.zip cc-switch-cli.exe
             cd ../..
           fi
 
           # Linux x64 - MUSL
-          if [ -f "artifacts/cc-switch-cli-linux-x64-musl/cc-switch" ]; then
+          if [ -f "artifacts/cc-switch-cli-linux-x64-musl/cc-switch-cli" ]; then
             tar -czf release-assets/cc-switch-cli-${VERSION}-linux-x64-musl.tar.gz \
-              -C artifacts/cc-switch-cli-linux-x64-musl cc-switch
+              -C artifacts/cc-switch-cli-linux-x64-musl cc-switch-cli
           fi
 
           # Linux x64 - GLIBC
-          if [ -f "artifacts/cc-switch-cli-linux-x64/cc-switch" ]; then
+          if [ -f "artifacts/cc-switch-cli-linux-x64/cc-switch-cli" ]; then
             tar -czf release-assets/cc-switch-cli-${VERSION}-linux-x64.tar.gz \
-              -C artifacts/cc-switch-cli-linux-x64 cc-switch
+              -C artifacts/cc-switch-cli-linux-x64 cc-switch-cli
           fi
 
           # Linux ARM64 - MUSL
-          if [ -f "artifacts/cc-switch-cli-linux-arm64-musl/cc-switch" ]; then
+          if [ -f "artifacts/cc-switch-cli-linux-arm64-musl/cc-switch-cli" ]; then
             tar -czf release-assets/cc-switch-cli-${VERSION}-linux-arm64-musl.tar.gz \
-              -C artifacts/cc-switch-cli-linux-arm64-musl cc-switch
+              -C artifacts/cc-switch-cli-linux-arm64-musl cc-switch-cli
           fi
 
           # Linux ARM64 - GLIBC
-          if [ -f "artifacts/cc-switch-cli-linux-arm64/cc-switch" ]; then
+          if [ -f "artifacts/cc-switch-cli-linux-arm64/cc-switch-cli" ]; then
             tar -czf release-assets/cc-switch-cli-${VERSION}-linux-arm64.tar.gz \
-              -C artifacts/cc-switch-cli-linux-arm64 cc-switch
+              -C artifacts/cc-switch-cli-linux-arm64 cc-switch-cli
           fi
 
           echo "=== Release assets ==="
@@ -243,16 +240,16 @@ jobs:
             **macOS / Linux:**
             ```bash
             tar -xzf cc-switch-cli-*.tar.gz
-            chmod +x cc-switch
-            sudo mv cc-switch /usr/local/bin/
+            chmod +x cc-switch-cli
+            sudo mv cc-switch-cli /usr/local/bin/
             ```
 
             **Windows:**
             ```powershell
-            # 解压 zip 后将 cc-switch.exe 移动到 PATH 目录或直接运行
+            # 解压 zip 后将 cc-switch-cli.exe 移动到 PATH 目录或直接运行
             ```
 
-            💡 **macOS 提示**: 如遇 "无法验证开发者"，执行：`xattr -cr /usr/local/bin/cc-switch`
+            💡 **macOS 提示**: 如遇 "无法验证开发者"，执行：`xattr -cr /usr/local/bin/cc-switch-cli`
 
             💡 **Linux 用户建议优先使用 `-musl` 版本（静态链接，无系统库依赖，兼容所有发行版）**
           files: release-assets/*

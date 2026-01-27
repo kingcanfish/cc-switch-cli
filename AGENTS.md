@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-- `src/`: Rust crate for the `cc-switch` CLI.
+- `src/`: Rust crate for the `cc-switch-cli` CLI.
   - `src/cli/`: command parsing + interactive TUI flows.
   - `src/services/`: core business logic (providers, MCP, prompts, config, env).
 - `tests/`: Rust integration tests (`*.rs`).
@@ -15,7 +15,7 @@ Run commands from the repo root unless noted.
 
 - Build debug binary: `cargo build`
 - Build release binary: `cargo build --release`
-- Run locally: `cargo run --bin cc-switch -- --help`
+- Run locally: `cargo run --bin cc-switch-cli -- --help`
 - Run tests: `cargo test`
 - Format: `cargo fmt`
 - Lint (recommended): `cargo clippy --all-targets -- -D warnings`
@@ -38,4 +38,4 @@ Run commands from the repo root unless noted.
 
 ## Security & Configuration Tips
 
-- Never commit real API keys or personal config files; the app manages data under `~/.cc-switch/` and writes “live” configs for Claude/Codex/Gemini under their respective home directories.
+- Never commit real API keys or personal config files; the app manages data under `~/.cc-switch-cli/` and writes “live” configs for Claude/Codex/Gemini under their respective home directories.

@@ -2,8 +2,8 @@
 
 # CC-Switch CLI
 
-[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/saladday/cc-switch-cli/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/saladday/cc-switch-cli/releases)
+[![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)](https://github.com/kingcanfish/cc-switch-cli/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/kingcanfish/cc-switch-cli/releases)
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -30,20 +30,20 @@
 
 **交互模式（推荐）**
 ```bash
-cc-switch
+cc-switch-cli
 ```
 🤩 按照屏幕菜单探索功能。
 
 **命令行模式**
 ```bash
-cc-switch provider list              # 列出供应商
-cc-switch provider switch <id>       # 切换供应商
-cc-switch mcp sync                   # 同步 MCP 服务器
+cc-switch-cli provider list              # 列出供应商
+cc-switch-cli provider switch <id>       # 切换供应商
+cc-switch-cli mcp sync                   # 同步 MCP 服务器
 
 # 使用全局 `--app` 参数来指定目标应用：
-cc-switch --app claude provider list    # 管理 Claude 供应商
-cc-switch --app codex mcp sync          # 同步 Codex MCP 服务器
-cc-switch --app gemini prompts list     # 列出 Gemini 提示词
+cc-switch-cli --app claude provider list    # 管理 Claude 供应商
+cc-switch-cli --app codex mcp sync          # 同步 Codex MCP 服务器
+cc-switch-cli --app gemini prompts list     # 列出 Gemini 提示词
 
 # 支持的应用：`claude`（默认）、`codex`、`gemini`
 ```
@@ -61,14 +61,14 @@ cc-switch --app gemini prompts list     # 列出 Gemini 提示词
 **功能：** 一键切换、多端点支持、API 密钥管理、速度测试、供应商复制。
 
 ```bash
-cc-switch provider list              # 列出所有供应商
-cc-switch provider current           # 显示当前供应商
-cc-switch provider switch <id>       # 切换供应商
-cc-switch provider add               # 添加新供应商
-cc-switch provider edit <id>         # 编辑现有供应商
-cc-switch provider duplicate <id>    # 复制供应商
-cc-switch provider delete <id>       # 删除供应商
-cc-switch provider speedtest <id>    # 测试 API 延迟
+cc-switch-cli provider list              # 列出所有供应商
+cc-switch-cli provider current           # 显示当前供应商
+cc-switch-cli provider switch <id>       # 切换供应商
+cc-switch-cli provider add               # 添加新供应商
+cc-switch-cli provider edit <id>         # 编辑现有供应商
+cc-switch-cli provider duplicate <id>    # 复制供应商
+cc-switch-cli provider delete <id>       # 删除供应商
+cc-switch-cli provider speedtest <id>    # 测试 API 延迟
 ```
 
 ### 🛠️ MCP 服务器管理
@@ -78,15 +78,15 @@ cc-switch provider speedtest <id>    # 测试 API 延迟
 **功能：** 统一管理、多应用支持、三种传输类型（stdio/http/sse）、自动同步、智能 TOML 解析器。
 
 ```bash
-cc-switch mcp list                   # 列出所有 MCP 服务器
-cc-switch mcp add                    # 添加新 MCP 服务器（交互式）
-cc-switch mcp edit <id>              # 编辑 MCP 服务器
-cc-switch mcp delete <id>            # 删除 MCP 服务器
-cc-switch mcp enable <id> --app claude   # 为特定应用启用
-cc-switch mcp disable <id> --app claude  # 为特定应用禁用
-cc-switch mcp validate <command>     # 验证命令在 PATH 中
-cc-switch mcp sync                   # 同步到实时文件
-cc-switch mcp import --app claude    # 从实时配置导入
+cc-switch-cli mcp list                   # 列出所有 MCP 服务器
+cc-switch-cli mcp add                    # 添加新 MCP 服务器（交互式）
+cc-switch-cli mcp edit <id>              # 编辑 MCP 服务器
+cc-switch-cli mcp delete <id>            # 删除 MCP 服务器
+cc-switch-cli mcp enable <id> --app claude   # 为特定应用启用
+cc-switch-cli mcp disable <id> --app claude  # 为特定应用禁用
+cc-switch-cli mcp validate <command>     # 验证命令在 PATH 中
+cc-switch-cli mcp sync                   # 同步到实时文件
+cc-switch-cli mcp import --app claude    # 从实时配置导入
 ```
 
 ### 💬 Prompts 管理
@@ -96,31 +96,31 @@ cc-switch mcp import --app claude    # 从实时配置导入
 **跨应用支持：** Claude (`CLAUDE.md`)、Codex (`AGENTS.md`)、Gemini (`GEMINI.md`)。
 
 ```bash
-cc-switch prompts list               # 列出提示词预设
-cc-switch prompts current            # 显示当前活动提示词
-cc-switch prompts activate <id>      # 激活提示词
-cc-switch prompts deactivate         # 停用当前激活的提示词
-cc-switch prompts create             # 创建新提示词预设
-cc-switch prompts edit <id>          # 编辑提示词预设
-cc-switch prompts show <id>          # 显示完整内容
-cc-switch prompts delete <id>        # 删除提示词
+cc-switch-cli prompts list               # 列出提示词预设
+cc-switch-cli prompts current            # 显示当前活动提示词
+cc-switch-cli prompts activate <id>      # 激活提示词
+cc-switch-cli prompts deactivate         # 停用当前激活的提示词
+cc-switch-cli prompts create             # 创建新提示词预设
+cc-switch-cli prompts edit <id>          # 编辑提示词预设
+cc-switch-cli prompts show <id>          # 显示完整内容
+cc-switch-cli prompts delete <id>        # 删除提示词
 ```
 
 ### 🎯 Skills 管理
 
-⚠️ **注意：v4.1.x 版本暂未实现** - 此功能计划在未来版本中推出。
+⚠️ **注意：v0.0.1 版本暂未实现** - 此功能计划在未来版本中推出。
 
 通过社区技能扩展 Claude Code/Codex/Gemini 的能力。
 
 **功能：** 搜索技能市场、安装/卸载、仓库管理、技能信息查看。
 
 ```bash
-cc-switch skills list                # 列出已安装技能
-cc-switch skills search <query>      # 搜索可用技能
-cc-switch skills install <name>      # 安装技能
-cc-switch skills uninstall <name>    # 卸载技能
-cc-switch skills info <name>         # 显示技能信息
-cc-switch skills repos               # 管理技能仓库
+cc-switch-cli skills list                # 列出已安装技能
+cc-switch-cli skills search <query>      # 搜索可用技能
+cc-switch-cli skills install <name>      # 安装技能
+cc-switch-cli skills uninstall <name>    # 卸载技能
+cc-switch-cli skills info <name>         # 显示技能信息
+cc-switch-cli skills repos               # 管理技能仓库
 ```
 
 ### ⚙️ 配置管理
@@ -130,29 +130,29 @@ cc-switch skills repos               # 管理技能仓库
 **功能：** 自定义备份命名、交互式备份选择、自动轮换（保留 10 个）、导入/导出。
 
 ```bash
-cc-switch config show                # 显示配置
-cc-switch config path                # 显示配置文件路径
-cc-switch config validate            # 验证配置文件
+cc-switch-cli config show                # 显示配置
+cc-switch-cli config path                # 显示配置文件路径
+cc-switch-cli config validate            # 验证配置文件
 
 # 通用配置片段（跨所有供应商共享设置）
-cc-switch --app claude config common show
-cc-switch --app claude config common set --json '{"env":{"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC":1},"includeCoAuthoredBy":false}' --apply
-cc-switch --app claude config common clear --apply
+cc-switch-cli --app claude config common show
+cc-switch-cli --app claude config common set --json '{"env":{"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC":1},"includeCoAuthoredBy":false}' --apply
+cc-switch-cli --app claude config common clear --apply
 
 # 备份
-cc-switch config backup              # 创建备份（自动命名）
-cc-switch config backup --name my-backup  # 创建备份（自定义名称）
+cc-switch-cli config backup              # 创建备份（自动命名）
+cc-switch-cli config backup --name my-backup  # 创建备份（自定义名称）
 
 # 恢复
-cc-switch config restore             # 交互式：从备份列表选择
-cc-switch config restore --backup <id>    # 通过 ID 恢复特定备份
-cc-switch config restore --file <path>    # 从外部文件恢复
+cc-switch-cli config restore             # 交互式：从备份列表选择
+cc-switch-cli config restore --backup <id>    # 通过 ID 恢复特定备份
+cc-switch-cli config restore --file <path>    # 从外部文件恢复
 
 # 导入/导出
-cc-switch config export <path>       # 导出到外部文件
-cc-switch config import <path>       # 从外部文件导入
+cc-switch-cli config export <path>       # 导出到外部文件
+cc-switch-cli config import <path>       # 从外部文件导入
 
-cc-switch config reset               # 重置为默认配置
+cc-switch-cli config reset               # 重置为默认配置
 ```
 
 ### 🌐 多语言支持
@@ -168,11 +168,11 @@ Shell 补全、环境管理等实用功能。
 
 ```bash
 # Shell 补全
-cc-switch completions <shell>        # 生成 shell 补全（bash/zsh/fish/powershell）
+cc-switch-cli completions <shell>        # 生成 shell 补全（bash/zsh/fish/powershell）
 
 # 环境管理
-cc-switch env check                  # 检查环境冲突
-cc-switch env list                   # 列出环境变量
+cc-switch-cli env check                  # 检查环境冲突
+cc-switch-cli env list                   # 列出环境变量
 ```
 
 ---
@@ -181,64 +181,64 @@ cc-switch env list                   # 列出环境变量
 
 ### 方法 1：下载预编译二进制（推荐）
 
-从 [GitHub Releases](https://github.com/saladday/cc-switch-cli/releases) 下载最新版本。
+从 [GitHub Releases](https://github.com/kingcanfish/cc-switch-cli/releases) 下载最新版本。
 
 #### macOS
 
 ```bash
 # 下载 Universal Binary（推荐，支持 Apple Silicon + Intel）
-curl -LO https://github.com/saladday/cc-switch-cli/releases/latest/download/cc-switch-cli-v4.3.0-darwin-universal.tar.gz
+curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.0.1-darwin-universal.tar.gz
 
 # 解压
-tar -xzf cc-switch-cli-v4.3.0-darwin-universal.tar.gz
+tar -xzf cc-switch-cli-v0.0.1-darwin-universal.tar.gz
 
 # 添加执行权限
-chmod +x cc-switch
+chmod +x cc-switch-cli
 
 # 移动到 PATH
-sudo mv cc-switch /usr/local/bin/
+sudo mv cc-switch-cli /usr/local/bin/
 
 # 如遇 "无法验证开发者" 提示
-xattr -cr /usr/local/bin/cc-switch
+xattr -cr /usr/local/bin/cc-switch-cli
 ```
 
 #### Linux (x64)
 
 ```bash
 # 下载
-curl -LO https://github.com/saladday/cc-switch-cli/releases/latest/download/cc-switch-cli-v4.3.0-linux-x64-musl.tar.gz
+curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.0.1-linux-x64-musl.tar.gz
 
 # 解压
-tar -xzf cc-switch-cli-v4.3.0-linux-x64-musl.tar.gz
+tar -xzf cc-switch-cli-v0.0.1-linux-x64-musl.tar.gz
 
 # 添加执行权限
-chmod +x cc-switch
+chmod +x cc-switch-cli
 
 # 移动到 PATH
-sudo mv cc-switch /usr/local/bin/
+sudo mv cc-switch-cli /usr/local/bin/
 ```
 
 #### Linux (ARM64)
 
 ```bash
 # 适用于树莓派或 ARM 服务器
-curl -LO https://github.com/saladday/cc-switch-cli/releases/latest/download/cc-switch-cli-v4.3.0-linux-arm64-musl.tar.gz
-tar -xzf cc-switch-cli-v4.3.0-linux-arm64-musl.tar.gz
-chmod +x cc-switch
-sudo mv cc-switch /usr/local/bin/
+curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.0.1-linux-arm64-musl.tar.gz
+tar -xzf cc-switch-cli-v0.0.1-linux-arm64-musl.tar.gz
+chmod +x cc-switch-cli
+sudo mv cc-switch-cli /usr/local/bin/
 ```
 
 #### Windows
 
 ```powershell
 # 下载 zip 文件
-# https://github.com/saladday/cc-switch-cli/releases/latest/download/cc-switch-cli-v4.3.0-windows-x64.zip
+# https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.0.1-windows-x64.zip
 
-# 解压后将 cc-switch.exe 移动到 PATH 目录，例如：
-move cc-switch.exe C:\Windows\System32\
+# 解压后将 cc-switch-cli.exe 移动到 PATH 目录，例如：
+move cc-switch-cli.exe C:\Windows\System32\
 
 # 或者直接运行
-.\cc-switch.exe
+.\cc-switch-cli.exe
 ```
 
 ### 方法 2：从源码构建
@@ -248,20 +248,20 @@ move cc-switch.exe C:\Windows\System32\
 
 **构建：**
 ```bash
-git clone https://github.com/saladday/cc-switch-cli.git
+git clone https://github.com/kingcanfish/cc-switch-cli.git
 cd cc-switch-cli
 cargo build --release
 
-# 二进制位置：./target/release/cc-switch
+# 二进制位置：./target/release/cc-switch-cli
 ```
 
 **安装到系统：**
 ```bash
 # macOS/Linux
-sudo cp target/release/cc-switch /usr/local/bin/
+sudo cp target/release/cc-switch-cli /usr/local/bin/
 
 # Windows
-copy target\release\cc-switch.exe C:\Windows\System32\
+copy target\release\cc-switch-cli.exe C:\Windows\System32\
 ```
 
 ---
@@ -302,12 +302,12 @@ copy target\release\cc-switch.exe C:\Windows\System32\
 
 1. 检查冲突：
    ```bash
-   cc-switch env check --app claude
+   cc-switch-cli env check --app claude
    ```
 
 2. 列出所有相关环境变量：
    ```bash
-   cc-switch env list --app claude
+   cc-switch-cli env list --app claude
    ```
 
 3. 如果发现冲突，手动删除它们：
@@ -335,7 +335,7 @@ CC-Switch 目前支持三个 AI 编程助手：
 
 使用全局 `--app` 参数指定要管理的应用：
 ```bash
-cc-switch --app codex provider list
+cc-switch-cli --app codex provider list
 ```
 
 </details>
@@ -345,7 +345,7 @@ cc-switch --app codex provider list
 
 <br>
 
-请在我们的 [GitHub Issues](https://github.com/saladday/cc-switch-cli/issues) 页面提交问题，并包含：
+请在我们的 [GitHub Issues](https://github.com/kingcanfish/cc-switch-cli/issues) 页面提交问题，并包含：
 - 问题或功能请求的详细描述
 - 复现步骤（针对 bug）
 - 你的系统信息（操作系统、版本）
@@ -403,4 +403,4 @@ src/
 ## 📜 许可证
 
 - MIT © 原作者：Jason Young
-- CLI 分支维护者：saladday
+- CLI 分支维护者：kingcanfish

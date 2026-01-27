@@ -99,7 +99,7 @@ impl SpeedtestService {
         Client::builder()
             .timeout(Duration::from_secs(timeout_secs))
             .redirect(reqwest::redirect::Policy::limited(5))
-            .user_agent("cc-switch-speedtest/1.0")
+            .user_agent("cc-switch-cli-speedtest/1.0")
             .build()
             .map_err(|e| {
                 AppError::localized(
