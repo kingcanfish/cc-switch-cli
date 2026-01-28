@@ -1,4 +1,5 @@
 use crate::settings::{get_settings, update_settings};
+use std::collections::HashMap;
 use std::sync::OnceLock;
 use std::sync::RwLock;
 
@@ -19,8 +20,12 @@ impl Language {
 
     pub fn display_name(&self) -> &'static str {
         match self {
-            Language::English => "English",
-            Language::Chinese => "中文",
+            Language::English => {
+                text_for_language(Language::English, "language_display_name_english")
+            }
+            Language::Chinese => {
+                text_for_language(Language::Chinese, "language_display_name_chinese")
+            }
         }
     }
 
@@ -72,2438 +77,1309 @@ pub fn set_language(lang: Language) -> Result<(), crate::error::AppError> {
 }
 
 /// Check if current language is Chinese
-pub fn is_chinese() -> bool {
-    current_language() == Language::Chinese
+// ============================================================================
+// Locale loading and lookup
+// ============================================================================
+
+struct LocaleStore {
+    en: HashMap<String, &'static str>,
+    zh: HashMap<String, &'static str>,
 }
 
-// ============================================================================
-// Localized Text Macros and Functions
-// ============================================================================
+fn load_locale(yaml: &str) -> HashMap<String, &'static str> {
+    let parsed: HashMap<String, String> =
+        serde_yaml::from_str(yaml).expect("Failed to parse locale YAML");
+    parsed
+        .into_iter()
+        .map(|(k, v)| {
+            let value: &'static str = Box::leak(v.into_boxed_str());
+            (k, value)
+        })
+        .collect()
+}
 
-/// Get localized text based on current language
-#[macro_export]
-macro_rules! t {
-    ($en:expr, $zh:expr) => {
-        if $crate::cli::i18n::is_chinese() {
-            $zh
-        } else {
-            $en
-        }
+fn locale_store() -> &'static LocaleStore {
+    static STORE: OnceLock<LocaleStore> = OnceLock::new();
+    STORE.get_or_init(|| {
+        let en = load_locale(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/locales/en.yaml"
+        )));
+        let zh = load_locale(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src/locales/zh.yaml"
+        )));
+        LocaleStore { en, zh }
+    })
+}
+
+fn lookup_with_store(locales: &LocaleStore, lang: Language, key: &'static str) -> &'static str {
+    let primary = match lang {
+        Language::Chinese => &locales.zh,
+        Language::English => &locales.en,
     };
+    if let Some(value) = primary.get(key) {
+        value
+    } else if let Some(value) = locales.en.get(key) {
+        value
+    } else {
+        key
+    }
 }
 
-// Re-export for convenience
-pub use t;
+fn text_for_language(lang: Language, key: &'static str) -> &'static str {
+    lookup_with_store(locale_store(), lang, key)
+}
+
+pub fn text(key: &'static str) -> &'static str {
+    text_for_language(current_language(), key)
+}
+
+pub fn text_with_args(key: &'static str, args: &[(&str, &str)]) -> String {
+    let mut value = text(key).to_string();
+    for (name, replacement) in args {
+        let placeholder = format!("{{{}}}", name);
+        value = value.replace(&placeholder, replacement);
+    }
+    value
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lookup_selects_locale() {
+        let mut en = HashMap::new();
+        let mut zh = HashMap::new();
+        en.insert("greeting".to_string(), "Hello");
+        zh.insert("greeting".to_string(), "你好");
+        let store = LocaleStore { en, zh };
+
+        assert_eq!(
+            lookup_with_store(&store, Language::Chinese, "greeting"),
+            "你好"
+        );
+    }
+
+    #[test]
+    fn lookup_falls_back_to_english() {
+        let mut en = HashMap::new();
+        let zh = HashMap::new();
+        en.insert("greeting".to_string(), "Hello");
+        let store = LocaleStore { en, zh };
+
+        assert_eq!(
+            lookup_with_store(&store, Language::Chinese, "greeting"),
+            "Hello"
+        );
+    }
+}
 
 // ============================================================================
 // Common UI Texts
 // ============================================================================
 
 pub mod texts {
-    use super::is_chinese;
-
-    // ============================================
-    // ENTITY TYPE CONSTANTS (实体类型常量)
-    // ============================================
+    use super::{text, text_with_args};
 
     pub fn entity_provider() -> &'static str {
-        if is_chinese() {
-            "供应商"
-        } else {
-            "provider"
-        }
+        text("entity_provider")
     }
 
     pub fn entity_server() -> &'static str {
-        if is_chinese() {
-            "服务器"
-        } else {
-            "server"
-        }
+        text("entity_server")
     }
 
     pub fn entity_prompt() -> &'static str {
-        if is_chinese() {
-            "提示词"
-        } else {
-            "prompt"
-        }
+        text("entity_prompt")
     }
 
-    // ============================================
-    // GENERIC ENTITY OPERATIONS (通用实体操作)
-    // ============================================
-
     pub fn entity_added_success(entity_type: &str, name: &str) -> String {
-        if is_chinese() {
-            format!("✓ 成功添加{} '{}'", entity_type, name)
-        } else {
-            format!("✓ Successfully added {} '{}'", entity_type, name)
-        }
+        text_with_args(
+            "entity_added_success",
+            &[("entity_type", entity_type), ("name", name)],
+        )
     }
 
     pub fn entity_updated_success(entity_type: &str, name: &str) -> String {
-        if is_chinese() {
-            format!("✓ 成功更新{} '{}'", entity_type, name)
-        } else {
-            format!("✓ Successfully updated {} '{}'", entity_type, name)
-        }
+        text_with_args(
+            "entity_updated_success",
+            &[("entity_type", entity_type), ("name", name)],
+        )
     }
 
     pub fn entity_deleted_success(entity_type: &str, name: &str) -> String {
-        if is_chinese() {
-            format!("✓ 成功删除{} '{}'", entity_type, name)
-        } else {
-            format!("✓ Successfully deleted {} '{}'", entity_type, name)
-        }
+        text_with_args(
+            "entity_deleted_success",
+            &[("entity_type", entity_type), ("name", name)],
+        )
     }
 
     pub fn entity_not_found(entity_type: &str, id: &str) -> String {
-        if is_chinese() {
-            format!("{}不存在: {}", entity_type, id)
-        } else {
-            format!("{} not found: {}", entity_type, id)
-        }
+        text_with_args(
+            "entity_not_found",
+            &[("entity_type", entity_type), ("id", id)],
+        )
     }
 
     pub fn confirm_create_entity(entity_type: &str) -> String {
-        if is_chinese() {
-            format!("\n确认创建此{}？", entity_type)
-        } else {
-            format!("\nConfirm create this {}?", entity_type)
-        }
+        text_with_args("confirm_create_entity", &[("entity_type", entity_type)])
     }
 
     pub fn confirm_update_entity(entity_type: &str) -> String {
-        if is_chinese() {
-            format!("\n确认更新此{}？", entity_type)
-        } else {
-            format!("\nConfirm update this {}?", entity_type)
-        }
+        text_with_args("confirm_update_entity", &[("entity_type", entity_type)])
     }
 
     pub fn confirm_delete_entity(entity_type: &str, name: &str) -> String {
-        if is_chinese() {
-            format!("\n确认删除{} '{}'？", entity_type, name)
-        } else {
-            format!("\nConfirm delete {} '{}'?", entity_type, name)
-        }
+        text_with_args(
+            "confirm_delete_entity",
+            &[("entity_type", entity_type), ("name", name)],
+        )
     }
 
     pub fn select_to_delete_entity(entity_type: &str) -> String {
-        if is_chinese() {
-            format!("选择要删除的{}：", entity_type)
-        } else {
-            format!("Select {} to delete:", entity_type)
-        }
+        text_with_args("select_to_delete_entity", &[("entity_type", entity_type)])
     }
 
     pub fn no_entities_to_delete(entity_type: &str) -> String {
-        if is_chinese() {
-            format!("没有可删除的{}", entity_type)
-        } else {
-            format!("No {} available for deletion", entity_type)
-        }
+        text_with_args("no_entities_to_delete", &[("entity_type", entity_type)])
     }
 
-    // ============================================
-    // COMMON UI ELEMENTS (通用界面元素)
-    // ============================================
-
-    // Welcome & Headers
     pub fn welcome_title() -> &'static str {
-        if is_chinese() {
-            "    🎯 CC-Switch 交互模式"
-        } else {
-            "    🎯 CC-Switch Interactive Mode"
-        }
+        text("welcome_title")
     }
 
     pub fn application() -> &'static str {
-        if is_chinese() {
-            "应用程序"
-        } else {
-            "Application"
-        }
+        text("application")
     }
 
     pub fn goodbye() -> &'static str {
-        if is_chinese() {
-            "👋 再见！"
-        } else {
-            "👋 Goodbye!"
-        }
+        text("goodbye")
     }
 
-    // Main Menu
     pub fn main_menu_prompt(app: &str) -> String {
-        if is_chinese() {
-            format!("请选择操作 (当前: {})", app)
-        } else {
-            format!("What would you like to do? (Current: {})", app)
-        }
+        text_with_args("main_menu_prompt", &[("app", app)])
     }
 
     pub fn main_menu_help() -> &'static str {
-        if is_chinese() {
-            "↑↓ 选择，←→ 切换应用，/ 搜索，Enter 确认，Esc 清除/退出"
-        } else {
-            "↑↓ to move, ←→ to switch app, / to search, Enter to select, Esc to clear/exit"
-        }
+        text("main_menu_help")
     }
 
     pub fn main_menu_search_prompt() -> &'static str {
-        if is_chinese() {
-            "输入搜索关键字（空或 Esc 清除过滤）："
-        } else {
-            "Enter search keyword (empty/Esc to clear):"
-        }
+        text("main_menu_search_prompt")
     }
 
     pub fn main_menu_filtering(query: &str) -> String {
-        if is_chinese() {
-            format!("🔎 搜索: {}", query)
-        } else {
-            format!("🔎 Search: {}", query)
-        }
+        text_with_args("main_menu_filtering", &[("query", query)])
     }
 
     pub fn main_menu_no_matches() -> &'static str {
-        if is_chinese() {
-            "没有匹配的菜单项"
-        } else {
-            "No matching menu items"
-        }
+        text("main_menu_no_matches")
     }
 
     pub fn menu_manage_providers() -> &'static str {
-        if is_chinese() {
-            "🔌 管理供应商"
-        } else {
-            "🔌 Manage Providers"
-        }
+        text("menu_manage_providers")
     }
 
     pub fn menu_manage_mcp() -> &'static str {
-        if is_chinese() {
-            "🛠️  管理 MCP 服务器"
-        } else {
-            "🛠️  Manage MCP Servers"
-        }
+        text("menu_manage_mcp")
     }
 
     pub fn menu_manage_prompts() -> &'static str {
-        if is_chinese() {
-            "💬 管理提示词"
-        } else {
-            "💬 Manage Prompts"
-        }
+        text("menu_manage_prompts")
     }
 
     pub fn menu_manage_config() -> &'static str {
-        if is_chinese() {
-            "⚙️  配置文件管理"
-        } else {
-            "⚙️  Manage Configuration"
-        }
+        text("menu_manage_config")
     }
 
     pub fn menu_view_config() -> &'static str {
-        if is_chinese() {
-            "👁️  查看当前配置"
-        } else {
-            "👁️  View Current Configuration"
-        }
+        text("menu_view_config")
     }
 
     pub fn menu_switch_app() -> &'static str {
-        if is_chinese() {
-            "🔄 切换应用"
-        } else {
-            "🔄 Switch Application"
-        }
+        text("menu_switch_app")
     }
 
     pub fn menu_settings() -> &'static str {
-        if is_chinese() {
-            "⚙️  设置"
-        } else {
-            "⚙️  Settings"
-        }
+        text("menu_settings")
     }
 
     pub fn menu_exit() -> &'static str {
-        if is_chinese() {
-            "🚪 退出"
-        } else {
-            "🚪 Exit"
-        }
+        text("menu_exit")
     }
 
-    // ============================================
-    // PROVIDER MANAGEMENT (供应商管理)
-    // ============================================
-
     pub fn provider_management() -> &'static str {
-        if is_chinese() {
-            "🔌 供应商管理"
-        } else {
-            "🔌 Provider Management"
-        }
+        text("provider_management")
     }
 
     pub fn no_providers() -> &'static str {
-        if is_chinese() {
-            "未找到供应商。"
-        } else {
-            "No providers found."
-        }
+        text("no_providers")
     }
 
     pub fn view_current_provider() -> &'static str {
-        if is_chinese() {
-            "📋 查看当前供应商详情"
-        } else {
-            "📋 View Current Provider Details"
-        }
+        text("view_current_provider")
     }
 
     pub fn switch_provider() -> &'static str {
-        if is_chinese() {
-            "🔄 切换供应商"
-        } else {
-            "🔄 Switch Provider"
-        }
+        text("switch_provider")
     }
 
     pub fn add_provider() -> &'static str {
-        if is_chinese() {
-            "➕ 新增供应商"
-        } else {
-            "➕ Add Provider"
-        }
+        text("add_provider")
     }
 
     pub fn add_official_provider() -> &'static str {
-        if is_chinese() {
-            "添加官方供应商"
-        } else {
-            "Add Official Provider"
-        }
+        text("add_official_provider")
     }
 
     pub fn add_third_party_provider() -> &'static str {
-        if is_chinese() {
-            "添加第三方供应商"
-        } else {
-            "Add Third-Party Provider"
-        }
+        text("add_third_party_provider")
     }
 
     pub fn select_provider_add_mode() -> &'static str {
-        if is_chinese() {
-            "请选择供应商类型："
-        } else {
-            "Select provider type:"
-        }
+        text("select_provider_add_mode")
     }
 
     pub fn delete_provider() -> &'static str {
-        if is_chinese() {
-            "🗑️  删除供应商"
-        } else {
-            "🗑️  Delete Provider"
-        }
+        text("delete_provider")
     }
 
     pub fn back_to_main() -> &'static str {
-        if is_chinese() {
-            "⬅️  返回主菜单"
-        } else {
-            "⬅️  Back to Main Menu"
-        }
+        text("back_to_main")
     }
 
     pub fn choose_action() -> &'static str {
-        if is_chinese() {
-            "选择操作："
-        } else {
-            "Choose an action:"
-        }
+        text("choose_action")
     }
 
     pub fn esc_to_go_back_help() -> &'static str {
-        if is_chinese() {
-            "Esc 返回上一步"
-        } else {
-            "Esc to go back"
-        }
+        text("esc_to_go_back_help")
     }
 
     pub fn select_filter_help() -> &'static str {
-        if is_chinese() {
-            "Esc 返回；输入可过滤"
-        } else {
-            "Esc to go back; type to filter"
-        }
+        text("select_filter_help")
     }
 
     pub fn current_provider_details() -> &'static str {
-        if is_chinese() {
-            "当前供应商详情"
-        } else {
-            "Current Provider Details"
-        }
+        text("current_provider_details")
     }
 
     pub fn only_one_provider() -> &'static str {
-        if is_chinese() {
-            "只有一个供应商，无法切换。"
-        } else {
-            "Only one provider available. Cannot switch."
-        }
+        text("only_one_provider")
     }
 
     pub fn no_other_providers() -> &'static str {
-        if is_chinese() {
-            "没有其他供应商可切换。"
-        } else {
-            "No other providers to switch to."
-        }
+        text("no_other_providers")
     }
 
     pub fn select_provider_to_switch() -> &'static str {
-        if is_chinese() {
-            "选择要切换到的供应商："
-        } else {
-            "Select provider to switch to:"
-        }
+        text("select_provider_to_switch")
     }
 
     pub fn switched_to_provider(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已切换到供应商 '{}'", id)
-        } else {
-            format!("✓ Switched to provider '{}'", id)
-        }
+        text_with_args("switched_to_provider", &[("id", id)])
     }
 
     pub fn restart_note() -> &'static str {
-        if is_chinese() {
-            "注意：请重启 CLI 客户端以应用更改。"
-        } else {
-            "Note: Restart your CLI client to apply the changes."
-        }
+        text("restart_note")
     }
 
     pub fn no_deletable_providers() -> &'static str {
-        if is_chinese() {
-            "没有可删除的供应商（无法删除当前供应商）。"
-        } else {
-            "No providers available for deletion (cannot delete current provider)."
-        }
+        text("no_deletable_providers")
     }
 
     pub fn select_provider_to_delete() -> &'static str {
-        if is_chinese() {
-            "选择要删除的供应商："
-        } else {
-            "Select provider to delete:"
-        }
+        text("select_provider_to_delete")
     }
 
     pub fn confirm_delete(id: &str) -> String {
-        if is_chinese() {
-            format!("确定要删除供应商 '{}' 吗？", id)
-        } else {
-            format!("Are you sure you want to delete provider '{}'?", id)
-        }
+        text_with_args("confirm_delete", &[("id", id)])
     }
 
     pub fn cancelled() -> &'static str {
-        if is_chinese() {
-            "已取消。"
-        } else {
-            "Cancelled."
-        }
+        text("cancelled")
     }
 
     pub fn deleted_provider(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已删除供应商 '{}'", id)
-        } else {
-            format!("✓ Deleted provider '{}'", id)
-        }
+        text_with_args("deleted_provider", &[("id", id)])
     }
 
-    // Provider Input - Basic Fields
     pub fn provider_name_label() -> &'static str {
-        if is_chinese() {
-            "供应商名称："
-        } else {
-            "Provider Name:"
-        }
+        text("provider_name_label")
     }
 
     pub fn provider_name_help() -> &'static str {
-        if is_chinese() {
-            "必填，用于显示的友好名称"
-        } else {
-            "Required, friendly display name"
-        }
+        text("provider_name_help")
     }
 
     pub fn provider_name_help_edit() -> &'static str {
-        if is_chinese() {
-            "必填，直接回车保持原值"
-        } else {
-            "Required, press Enter to keep"
-        }
+        text("provider_name_help_edit")
     }
 
     pub fn provider_name_placeholder() -> &'static str {
-        "OpenAI"
+        text("provider_name_placeholder")
     }
 
     pub fn provider_name_empty_error() -> &'static str {
-        if is_chinese() {
-            "供应商名称不能为空"
-        } else {
-            "Provider name cannot be empty"
-        }
+        text("provider_name_empty_error")
     }
 
     pub fn website_url_label() -> &'static str {
-        if is_chinese() {
-            "官网 URL（可选）："
-        } else {
-            "Website URL (optional):"
-        }
+        text("website_url_label")
     }
 
     pub fn website_url_help() -> &'static str {
-        if is_chinese() {
-            "供应商的网站地址，直接回车跳过"
-        } else {
-            "Provider's website, press Enter to skip"
-        }
+        text("website_url_help")
     }
 
     pub fn website_url_help_edit() -> &'static str {
-        if is_chinese() {
-            "留空则不修改，直接回车跳过"
-        } else {
-            "Leave blank to keep, Enter to skip"
-        }
+        text("website_url_help_edit")
     }
 
     pub fn website_url_placeholder() -> &'static str {
-        "https://openai.com"
+        text("website_url_placeholder")
     }
 
-    // Provider Commands
     pub fn no_providers_hint() -> &'static str {
-        "Use 'cc-switch-cli provider add' to create a new provider."
+        text("no_providers_hint")
     }
 
     pub fn app_config_not_found(app: &str) -> String {
-        if is_chinese() {
-            format!("应用 {} 配置不存在", app)
-        } else {
-            format!("Application {} configuration not found", app)
-        }
+        text_with_args("app_config_not_found", &[("app", app)])
     }
 
     pub fn provider_not_found(id: &str) -> String {
-        if is_chinese() {
-            format!("供应商不存在: {}", id)
-        } else {
-            format!("Provider not found: {}", id)
-        }
+        text_with_args("provider_not_found", &[("id", id)])
     }
 
     pub fn generated_id(id: &str) -> String {
-        if is_chinese() {
-            format!("生成的 ID: {}", id)
-        } else {
-            format!("Generated ID: {}", id)
-        }
+        text_with_args("generated_id", &[("id", id)])
     }
 
     pub fn configure_optional_fields_prompt() -> &'static str {
-        if is_chinese() {
-            "配置可选字段（备注、排序索引）？"
-        } else {
-            "Configure optional fields (notes, sort index)?"
-        }
+        text("configure_optional_fields_prompt")
     }
 
     pub fn current_config_header() -> &'static str {
-        if is_chinese() {
-            "当前配置："
-        } else {
-            "Current Configuration:"
-        }
+        text("current_config_header")
     }
 
     pub fn modify_provider_config_prompt() -> &'static str {
-        if is_chinese() {
-            "修改供应商配置（API Key, Base URL 等）？"
-        } else {
-            "Modify provider configuration (API Key, Base URL, etc.)?"
-        }
+        text("modify_provider_config_prompt")
     }
 
     pub fn modify_optional_fields_prompt() -> &'static str {
-        if is_chinese() {
-            "修改可选字段（备注、排序索引）？"
-        } else {
-            "Modify optional fields (notes, sort index)?"
-        }
+        text("modify_optional_fields_prompt")
     }
 
     pub fn current_provider_synced_warning() -> &'static str {
-        if is_chinese() {
-            "⚠ 此供应商当前已激活，修改已同步到 live 配置"
-        } else {
-            "⚠ This provider is currently active, changes synced to live config"
-        }
+        text("current_provider_synced_warning")
     }
 
     pub fn input_failed_error(err: &str) -> String {
-        if is_chinese() {
-            format!("输入失败: {}", err)
-        } else {
-            format!("Input failed: {}", err)
-        }
+        text_with_args("input_failed_error", &[("err", err)])
     }
 
     pub fn cannot_delete_current_provider() -> &'static str {
-        "Cannot delete the current active provider. Please switch to another provider first."
+        text("cannot_delete_current_provider")
     }
 
-    // Provider Input - Basic Fields
     pub fn provider_name_prompt() -> &'static str {
-        if is_chinese() {
-            "供应商名称："
-        } else {
-            "Provider Name:"
-        }
+        text("provider_name_prompt")
     }
 
-    // Provider Input - Claude Configuration
     pub fn config_claude_header() -> &'static str {
-        if is_chinese() {
-            "配置 Claude 供应商："
-        } else {
-            "Configure Claude Provider:"
-        }
+        text("config_claude_header")
     }
 
     pub fn api_key_label() -> &'static str {
-        if is_chinese() {
-            "API Key："
-        } else {
-            "API Key:"
-        }
+        text("api_key_label")
     }
 
     pub fn api_key_help() -> &'static str {
-        if is_chinese() {
-            "留空使用默认值"
-        } else {
-            "Leave empty to use default"
-        }
+        text("api_key_help")
     }
 
     pub fn base_url_label() -> &'static str {
-        if is_chinese() {
-            "Base URL："
-        } else {
-            "Base URL:"
-        }
+        text("base_url_label")
     }
 
     pub fn base_url_placeholder() -> &'static str {
-        if is_chinese() {
-            "如 https://api.anthropic.com"
-        } else {
-            "e.g., https://api.anthropic.com"
-        }
+        text("base_url_placeholder")
     }
 
     pub fn configure_model_names_prompt() -> &'static str {
-        if is_chinese() {
-            "配置模型名称？"
-        } else {
-            "Configure model names?"
-        }
+        text("configure_model_names_prompt")
     }
 
     pub fn model_default_label() -> &'static str {
-        if is_chinese() {
-            "默认模型："
-        } else {
-            "Default Model:"
-        }
+        text("model_default_label")
     }
 
     pub fn model_default_help() -> &'static str {
-        if is_chinese() {
-            "留空使用 Claude Code 默认模型"
-        } else {
-            "Leave empty to use Claude Code default"
-        }
+        text("model_default_help")
     }
 
     pub fn model_haiku_label() -> &'static str {
-        if is_chinese() {
-            "Haiku 模型："
-        } else {
-            "Haiku Model:"
-        }
+        text("model_haiku_label")
     }
 
     pub fn model_haiku_placeholder() -> &'static str {
-        if is_chinese() {
-            "如 claude-3-5-haiku-20241022"
-        } else {
-            "e.g., claude-3-5-haiku-20241022"
-        }
+        text("model_haiku_placeholder")
     }
 
     pub fn model_sonnet_label() -> &'static str {
-        if is_chinese() {
-            "Sonnet 模型："
-        } else {
-            "Sonnet Model:"
-        }
+        text("model_sonnet_label")
     }
 
     pub fn model_sonnet_placeholder() -> &'static str {
-        if is_chinese() {
-            "如 claude-3-5-sonnet-20241022"
-        } else {
-            "e.g., claude-3-5-sonnet-20241022"
-        }
+        text("model_sonnet_placeholder")
     }
 
     pub fn model_opus_label() -> &'static str {
-        if is_chinese() {
-            "Opus 模型："
-        } else {
-            "Opus Model:"
-        }
+        text("model_opus_label")
     }
 
     pub fn model_opus_placeholder() -> &'static str {
-        if is_chinese() {
-            "如 claude-3-opus-20240229"
-        } else {
-            "e.g., claude-3-opus-20240229"
-        }
+        text("model_opus_placeholder")
     }
 
-    // Provider Input - Codex Configuration
     pub fn config_codex_header() -> &'static str {
-        if is_chinese() {
-            "配置 Codex 供应商："
-        } else {
-            "Configure Codex Provider:"
-        }
+        text("config_codex_header")
     }
 
     pub fn openai_api_key_label() -> &'static str {
-        if is_chinese() {
-            "OpenAI API Key："
-        } else {
-            "OpenAI API Key:"
-        }
+        text("openai_api_key_label")
     }
 
     pub fn anthropic_api_key_label() -> &'static str {
-        if is_chinese() {
-            "Anthropic API Key："
-        } else {
-            "Anthropic API Key:"
-        }
+        text("anthropic_api_key_label")
     }
 
     pub fn config_toml_label() -> &'static str {
-        if is_chinese() {
-            "配置内容 (TOML)："
-        } else {
-            "Config Content (TOML):"
-        }
+        text("config_toml_label")
     }
 
     pub fn config_toml_help() -> &'static str {
-        if is_chinese() {
-            "按 Esc 后 Enter 提交"
-        } else {
-            "Press Esc then Enter to submit"
-        }
+        text("config_toml_help")
     }
 
     pub fn config_toml_placeholder() -> &'static str {
-        if is_chinese() {
-            "留空使用默认配置"
-        } else {
-            "Leave empty to use default config"
-        }
+        text("config_toml_placeholder")
     }
 
-    // Codex 0.64+ Configuration
     pub fn codex_auth_mode_info() -> &'static str {
-        if is_chinese() {
-            "⚠ 请选择 Codex 的鉴权方式（决定 API Key 从哪里读取）"
-        } else {
-            "⚠ Choose how Codex authenticates (where the API key is read from)"
-        }
+        text("codex_auth_mode_info")
     }
 
     pub fn codex_auth_mode_label() -> &'static str {
-        if is_chinese() {
-            "认证方式："
-        } else {
-            "Auth Mode:"
-        }
+        text("codex_auth_mode_label")
     }
 
     pub fn codex_auth_mode_help() -> &'static str {
-        if is_chinese() {
-            "OpenAI 认证：使用 auth.json/凭据存储；环境变量：使用 env_key 指定的变量（未设置会报错）"
-        } else {
-            "OpenAI auth uses auth.json/credential store; env var mode uses env_key (missing env var will error)"
-        }
+        text("codex_auth_mode_help")
     }
 
     pub fn codex_auth_mode_openai() -> &'static str {
-        if is_chinese() {
-            "OpenAI 认证（推荐，无需环境变量）"
-        } else {
-            "OpenAI auth (recommended, no env var)"
-        }
+        text("codex_auth_mode_openai")
     }
 
     pub fn codex_auth_mode_env_var() -> &'static str {
-        if is_chinese() {
-            "环境变量（env_key，需要手动 export）"
-        } else {
-            "Environment variable (env_key, requires export)"
-        }
+        text("codex_auth_mode_env_var")
     }
 
     pub fn codex_official_provider_tip() -> &'static str {
-        if is_chinese() {
-            "提示：官方供应商将使用 Codex 官方登录保存的凭证（codex login 可能会打开浏览器），无需填写 API Key"
-        } else {
-            "Tip: Official provider uses Codex login credentials (`codex login` may open a browser); no API key required"
-        }
+        text("codex_official_provider_tip")
     }
 
     pub fn codex_env_key_info() -> &'static str {
-        if is_chinese() {
-            "⚠ 环境变量模式：Codex 将从指定的环境变量读取 API Key"
-        } else {
-            "⚠ Env var mode: Codex will read the API key from the specified environment variable"
-        }
+        text("codex_env_key_info")
     }
 
     pub fn codex_env_key_label() -> &'static str {
-        if is_chinese() {
-            "环境变量名称："
-        } else {
-            "Environment Variable Name:"
-        }
+        text("codex_env_key_label")
     }
 
     pub fn codex_env_key_help() -> &'static str {
-        if is_chinese() {
-            "Codex 将从此环境变量读取 API 密钥（默认: OPENAI_API_KEY）"
-        } else {
-            "Codex will read API key from this env var (default: OPENAI_API_KEY)"
-        }
+        text("codex_env_key_help")
     }
 
     pub fn codex_wire_api_label() -> &'static str {
-        if is_chinese() {
-            "API 格式："
-        } else {
-            "API Format:"
-        }
+        text("codex_wire_api_label")
     }
 
     pub fn codex_wire_api_help() -> &'static str {
-        if is_chinese() {
-            "chat = Chat Completions API (大多数第三方), responses = OpenAI Responses API"
-        } else {
-            "chat = Chat Completions API (most providers), responses = OpenAI Responses API"
-        }
+        text("codex_wire_api_help")
     }
 
     pub fn codex_env_reminder(env_key: &str) -> String {
-        if is_chinese() {
-            format!(
-                "⚠ 请确保已设置环境变量 {} 并包含您的 API 密钥\n  例如: export {}=\"your-api-key\"",
-                env_key, env_key
-            )
-        } else {
-            format!(
-                "⚠ Make sure to set the {} environment variable with your API key\n  Example: export {}=\"your-api-key\"",
-                env_key, env_key
-            )
-        }
+        text_with_args("codex_env_reminder", &[("env_key", env_key)])
     }
 
     pub fn codex_openai_auth_info() -> &'static str {
-        if is_chinese() {
-            "✓ OpenAI 认证模式：Codex 将使用 auth.json/系统凭据存储，无需设置 OPENAI_API_KEY 环境变量"
-        } else {
-            "✓ OpenAI auth mode: Codex will use auth.json/credential store; no OPENAI_API_KEY env var required"
-        }
+        text("codex_openai_auth_info")
     }
 
     pub fn codex_dual_write_info(env_key: &str, _api_key: &str) -> String {
-        if is_chinese() {
-            format!(
-                "✓ 双写模式已启用（兼容所有 Codex 版本）\n\
-                  • 旧版本 Codex: 将使用 auth.json 中的 API Key\n\
-                  • Codex 0.64+: 可使用环境变量 {} (更安全)\n\
-                    例如: export {}=\"your-api-key\"",
-                env_key, env_key
-            )
-        } else {
-            format!(
-                "✓ Dual-write mode enabled (compatible with all Codex versions)\n\
-                  • Legacy Codex: Will use API Key from auth.json\n\
-                  • Codex 0.64+: Can use env variable {} (more secure)\n\
-                    Example: export {}=\"your-api-key\"",
-                env_key, env_key
-            )
-        }
+        text_with_args(
+            "codex_dual_write_info",
+            &[("env_key", env_key), ("_api_key", _api_key)],
+        )
     }
 
     pub fn use_current_config_prompt() -> &'static str {
-        if is_chinese() {
-            "使用当前配置？"
-        } else {
-            "Use current configuration?"
-        }
+        text("use_current_config_prompt")
     }
 
     pub fn use_current_config_help() -> &'static str {
-        if is_chinese() {
-            "选择 No 将进入自定义输入模式"
-        } else {
-            "Select No to enter custom input mode"
-        }
+        text("use_current_config_help")
     }
 
     pub fn input_toml_config() -> &'static str {
-        if is_chinese() {
-            "输入 TOML 配置（多行，输入空行结束）："
-        } else {
-            "Enter TOML config (multiple lines, empty line to finish):"
-        }
+        text("input_toml_config")
     }
 
     pub fn direct_enter_to_finish() -> &'static str {
-        if is_chinese() {
-            "直接回车结束输入"
-        } else {
-            "Press Enter to finish"
-        }
+        text("direct_enter_to_finish")
     }
 
     pub fn current_config_label() -> &'static str {
-        if is_chinese() {
-            "当前配置："
-        } else {
-            "Current Config:"
-        }
+        text("current_config_label")
     }
 
     pub fn config_toml_header() -> &'static str {
-        if is_chinese() {
-            "Config.toml 配置："
-        } else {
-            "Config.toml Configuration:"
-        }
+        text("config_toml_header")
     }
 
-    // Provider Input - Gemini Configuration
     pub fn config_gemini_header() -> &'static str {
-        if is_chinese() {
-            "配置 Gemini 供应商："
-        } else {
-            "Configure Gemini Provider:"
-        }
+        text("config_gemini_header")
     }
 
     pub fn auth_type_label() -> &'static str {
-        if is_chinese() {
-            "认证类型："
-        } else {
-            "Auth Type:"
-        }
+        text("auth_type_label")
     }
 
     pub fn auth_type_api_key() -> &'static str {
-        if is_chinese() {
-            "API Key"
-        } else {
-            "API Key"
-        }
+        text("auth_type_api_key")
     }
 
     pub fn auth_type_service_account() -> &'static str {
-        if is_chinese() {
-            "Service Account (ADC)"
-        } else {
-            "Service Account (ADC)"
-        }
+        text("auth_type_service_account")
     }
 
     pub fn gemini_api_key_label() -> &'static str {
-        if is_chinese() {
-            "Gemini API Key："
-        } else {
-            "Gemini API Key:"
-        }
+        text("gemini_api_key_label")
     }
 
     pub fn gemini_base_url_label() -> &'static str {
-        if is_chinese() {
-            "Base URL："
-        } else {
-            "Base URL:"
-        }
+        text("gemini_base_url_label")
     }
 
     pub fn gemini_base_url_help() -> &'static str {
-        if is_chinese() {
-            "留空使用官方 API"
-        } else {
-            "Leave empty to use official API"
-        }
+        text("gemini_base_url_help")
     }
 
     pub fn gemini_base_url_placeholder() -> &'static str {
-        if is_chinese() {
-            "如 https://generativelanguage.googleapis.com"
-        } else {
-            "e.g., https://generativelanguage.googleapis.com"
-        }
+        text("gemini_base_url_placeholder")
     }
 
     pub fn adc_project_id_label() -> &'static str {
-        if is_chinese() {
-            "GCP Project ID："
-        } else {
-            "GCP Project ID:"
-        }
+        text("adc_project_id_label")
     }
 
     pub fn adc_location_label() -> &'static str {
-        if is_chinese() {
-            "GCP Location："
-        } else {
-            "GCP Location:"
-        }
+        text("adc_location_label")
     }
 
     pub fn adc_location_placeholder() -> &'static str {
-        if is_chinese() {
-            "如 us-central1"
-        } else {
-            "e.g., us-central1"
-        }
+        text("adc_location_placeholder")
     }
 
     pub fn google_oauth_official() -> &'static str {
-        if is_chinese() {
-            "Google OAuth（官方）"
-        } else {
-            "Google OAuth (Official)"
-        }
+        text("google_oauth_official")
     }
 
     pub fn packycode_api_key() -> &'static str {
-        if is_chinese() {
-            "PackyCode API Key"
-        } else {
-            "PackyCode API Key"
-        }
+        text("packycode_api_key")
     }
 
     pub fn generic_api_key() -> &'static str {
-        if is_chinese() {
-            "通用 API Key"
-        } else {
-            "Generic API Key"
-        }
+        text("generic_api_key")
     }
 
     pub fn select_auth_method_help() -> &'static str {
-        if is_chinese() {
-            "选择 Gemini 的认证方式"
-        } else {
-            "Select authentication method for Gemini"
-        }
+        text("select_auth_method_help")
     }
 
     pub fn use_google_oauth_warning() -> &'static str {
-        if is_chinese() {
-            "使用 Google OAuth，将清空 API Key 配置"
-        } else {
-            "Using Google OAuth, API Key config will be cleared"
-        }
+        text("use_google_oauth_warning")
     }
 
     pub fn packycode_api_key_help() -> &'static str {
-        if is_chinese() {
-            "从 PackyCode 获取的 API Key"
-        } else {
-            "API Key obtained from PackyCode"
-        }
+        text("packycode_api_key_help")
     }
 
     pub fn packycode_endpoint_help() -> &'static str {
-        if is_chinese() {
-            "PackyCode API 端点"
-        } else {
-            "PackyCode API endpoint"
-        }
+        text("packycode_endpoint_help")
     }
 
     pub fn generic_api_key_help() -> &'static str {
-        if is_chinese() {
-            "通用的 Gemini API Key"
-        } else {
-            "Generic Gemini API Key"
-        }
+        text("generic_api_key_help")
     }
 
-    // Provider Input - Optional Fields
     pub fn notes_label() -> &'static str {
-        if is_chinese() {
-            "备注："
-        } else {
-            "Notes:"
-        }
+        text("notes_label")
     }
 
     pub fn notes_placeholder() -> &'static str {
-        if is_chinese() {
-            "可选的备注信息"
-        } else {
-            "Optional notes"
-        }
+        text("notes_placeholder")
     }
 
     pub fn sort_index_label() -> &'static str {
-        if is_chinese() {
-            "排序索引："
-        } else {
-            "Sort Index:"
-        }
+        text("sort_index_label")
     }
 
     pub fn sort_index_help() -> &'static str {
-        if is_chinese() {
-            "数字越小越靠前，留空使用创建时间排序"
-        } else {
-            "Lower numbers appear first, leave empty to sort by creation time"
-        }
+        text("sort_index_help")
     }
 
     pub fn sort_index_placeholder() -> &'static str {
-        if is_chinese() {
-            "如 1, 2, 3..."
-        } else {
-            "e.g., 1, 2, 3..."
-        }
+        text("sort_index_placeholder")
     }
 
     pub fn invalid_sort_index() -> &'static str {
-        if is_chinese() {
-            "排序索引必须是有效的数字"
-        } else {
-            "Sort index must be a valid number"
-        }
+        text("invalid_sort_index")
     }
 
     pub fn optional_fields_config() -> &'static str {
-        if is_chinese() {
-            "可选字段配置："
-        } else {
-            "Optional Fields Configuration:"
-        }
+        text("optional_fields_config")
     }
 
     pub fn notes_example_placeholder() -> &'static str {
-        if is_chinese() {
-            "自定义供应商，用于测试"
-        } else {
-            "Custom provider for testing"
-        }
+        text("notes_example_placeholder")
     }
 
     pub fn notes_help_edit() -> &'static str {
-        if is_chinese() {
-            "关于此供应商的额外说明，直接回车保持原值"
-        } else {
-            "Additional notes about this provider, press Enter to keep current value"
-        }
+        text("notes_help_edit")
     }
 
     pub fn notes_help_new() -> &'static str {
-        if is_chinese() {
-            "关于此供应商的额外说明，直接回车跳过"
-        } else {
-            "Additional notes about this provider, press Enter to skip"
-        }
+        text("notes_help_new")
     }
 
     pub fn sort_index_help_edit() -> &'static str {
-        if is_chinese() {
-            "数字，用于控制显示顺序，直接回车保持原值"
-        } else {
-            "Number for display order, press Enter to keep current value"
-        }
+        text("sort_index_help_edit")
     }
 
     pub fn sort_index_help_new() -> &'static str {
-        if is_chinese() {
-            "数字，用于控制显示顺序，直接回车跳过"
-        } else {
-            "Number for display order, press Enter to skip"
-        }
+        text("sort_index_help_new")
     }
 
     pub fn invalid_sort_index_number() -> &'static str {
-        if is_chinese() {
-            "排序索引必须是数字"
-        } else {
-            "Sort index must be a number"
-        }
+        text("invalid_sort_index_number")
     }
 
     pub fn provider_config_summary() -> &'static str {
-        if is_chinese() {
-            "=== 供应商配置摘要 ==="
-        } else {
-            "=== Provider Configuration Summary ==="
-        }
+        text("provider_config_summary")
     }
 
     pub fn id_label() -> &'static str {
-        if is_chinese() {
-            "ID"
-        } else {
-            "ID"
-        }
+        text("id_label")
     }
 
     pub fn website_label() -> &'static str {
-        if is_chinese() {
-            "官网"
-        } else {
-            "Website"
-        }
+        text("website_label")
     }
 
     pub fn core_config_label() -> &'static str {
-        if is_chinese() {
-            "核心配置："
-        } else {
-            "Core Configuration:"
-        }
+        text("core_config_label")
     }
 
     pub fn model_label() -> &'static str {
-        if is_chinese() {
-            "模型"
-        } else {
-            "Model"
-        }
+        text("model_label")
     }
 
     pub fn config_toml_lines(count: usize) -> String {
-        if is_chinese() {
-            format!("Config (TOML): {} 行", count)
-        } else {
-            format!("Config (TOML): {} lines", count)
-        }
+        let count = count.to_string();
+        text_with_args("config_toml_lines", &[("count", &count)])
     }
 
     pub fn optional_fields_label() -> &'static str {
-        if is_chinese() {
-            "可选字段："
-        } else {
-            "Optional Fields:"
-        }
+        text("optional_fields_label")
     }
 
     pub fn notes_label_colon() -> &'static str {
-        if is_chinese() {
-            "备注"
-        } else {
-            "Notes"
-        }
+        text("notes_label_colon")
     }
 
     pub fn sort_index_label_colon() -> &'static str {
-        if is_chinese() {
-            "排序索引"
-        } else {
-            "Sort Index"
-        }
+        text("sort_index_label_colon")
     }
 
     pub fn id_label_colon() -> &'static str {
-        if is_chinese() {
-            "ID"
-        } else {
-            "ID"
-        }
+        text("id_label_colon")
     }
 
     pub fn url_label_colon() -> &'static str {
-        if is_chinese() {
-            "网址"
-        } else {
-            "URL"
-        }
+        text("url_label_colon")
     }
 
     pub fn api_url_label_colon() -> &'static str {
-        if is_chinese() {
-            "API 地址"
-        } else {
-            "API URL"
-        }
+        text("api_url_label_colon")
     }
 
     pub fn summary_divider() -> &'static str {
-        "======================"
+        text("summary_divider")
     }
 
-    // Provider Input - Summary Display
     pub fn basic_info_header() -> &'static str {
-        if is_chinese() {
-            "基本信息"
-        } else {
-            "Basic Info"
-        }
+        text("basic_info_header")
     }
 
     pub fn name_display_label() -> &'static str {
-        if is_chinese() {
-            "名称"
-        } else {
-            "Name"
-        }
+        text("name_display_label")
     }
 
     pub fn app_display_label() -> &'static str {
-        if is_chinese() {
-            "应用"
-        } else {
-            "App"
-        }
+        text("app_display_label")
     }
 
     pub fn notes_display_label() -> &'static str {
-        if is_chinese() {
-            "备注"
-        } else {
-            "Notes"
-        }
+        text("notes_display_label")
     }
 
     pub fn sort_index_display_label() -> &'static str {
-        if is_chinese() {
-            "排序"
-        } else {
-            "Sort Index"
-        }
+        text("sort_index_display_label")
     }
 
     pub fn config_info_header() -> &'static str {
-        if is_chinese() {
-            "配置信息"
-        } else {
-            "Configuration"
-        }
+        text("config_info_header")
     }
 
     pub fn api_key_display_label() -> &'static str {
-        if is_chinese() {
-            "API Key"
-        } else {
-            "API Key"
-        }
+        text("api_key_display_label")
     }
 
     pub fn base_url_display_label() -> &'static str {
-        if is_chinese() {
-            "Base URL"
-        } else {
-            "Base URL"
-        }
+        text("base_url_display_label")
     }
 
     pub fn model_config_header() -> &'static str {
-        if is_chinese() {
-            "模型配置"
-        } else {
-            "Model Configuration"
-        }
+        text("model_config_header")
     }
 
     pub fn default_model_display() -> &'static str {
-        if is_chinese() {
-            "默认"
-        } else {
-            "Default"
-        }
+        text("default_model_display")
     }
 
     pub fn haiku_model_display() -> &'static str {
-        if is_chinese() {
-            "Haiku"
-        } else {
-            "Haiku"
-        }
+        text("haiku_model_display")
     }
 
     pub fn sonnet_model_display() -> &'static str {
-        if is_chinese() {
-            "Sonnet"
-        } else {
-            "Sonnet"
-        }
+        text("sonnet_model_display")
     }
 
     pub fn opus_model_display() -> &'static str {
-        if is_chinese() {
-            "Opus"
-        } else {
-            "Opus"
-        }
+        text("opus_model_display")
     }
 
     pub fn auth_type_display_label() -> &'static str {
-        if is_chinese() {
-            "认证"
-        } else {
-            "Auth Type"
-        }
+        text("auth_type_display_label")
     }
 
     pub fn project_id_display_label() -> &'static str {
-        if is_chinese() {
-            "项目 ID"
-        } else {
-            "Project ID"
-        }
+        text("project_id_display_label")
     }
 
     pub fn location_display_label() -> &'static str {
-        if is_chinese() {
-            "位置"
-        } else {
-            "Location"
-        }
+        text("location_display_label")
     }
 
-    // Interactive Provider - Menu Options
     pub fn edit_provider_menu() -> &'static str {
-        if is_chinese() {
-            "➕ 编辑供应商"
-        } else {
-            "➕ Edit Provider"
-        }
+        text("edit_provider_menu")
     }
 
     pub fn no_editable_providers() -> &'static str {
-        if is_chinese() {
-            "没有可编辑的供应商"
-        } else {
-            "No providers available for editing"
-        }
+        text("no_editable_providers")
     }
 
     pub fn select_provider_to_edit() -> &'static str {
-        if is_chinese() {
-            "选择要编辑的供应商："
-        } else {
-            "Select provider to edit:"
-        }
+        text("select_provider_to_edit")
     }
 
     pub fn choose_edit_mode() -> &'static str {
-        if is_chinese() {
-            "选择编辑模式："
-        } else {
-            "Choose edit mode:"
-        }
+        text("choose_edit_mode")
     }
 
     pub fn edit_mode_interactive() -> &'static str {
-        if is_chinese() {
-            "📝 交互式编辑 (分步提示)"
-        } else {
-            "📝 Interactive editing (step-by-step prompts)"
-        }
+        text("edit_mode_interactive")
     }
 
     pub fn edit_mode_json_editor() -> &'static str {
-        if is_chinese() {
-            "✏️  JSON 编辑 (使用外部编辑器)"
-        } else {
-            "✏️  JSON editing (use external editor)"
-        }
+        text("edit_mode_json_editor")
     }
 
     pub fn cancel() -> &'static str {
-        if is_chinese() {
-            "❌ 取消"
-        } else {
-            "❌ Cancel"
-        }
+        text("cancel")
     }
 
     pub fn opening_external_editor() -> &'static str {
-        if is_chinese() {
-            "正在打开外部编辑器..."
-        } else {
-            "Opening external editor..."
-        }
+        text("opening_external_editor")
     }
 
     pub fn invalid_json_syntax() -> &'static str {
-        if is_chinese() {
-            "无效的 JSON 语法"
-        } else {
-            "Invalid JSON syntax"
-        }
+        text("invalid_json_syntax")
     }
 
     pub fn invalid_provider_structure() -> &'static str {
-        if is_chinese() {
-            "无效的供应商结构"
-        } else {
-            "Invalid provider structure"
-        }
+        text("invalid_provider_structure")
     }
 
     pub fn provider_id_cannot_be_changed() -> &'static str {
-        if is_chinese() {
-            "供应商 ID 不能被修改"
-        } else {
-            "Provider ID cannot be changed"
-        }
+        text("provider_id_cannot_be_changed")
     }
 
     pub fn retry_editing() -> &'static str {
-        if is_chinese() {
-            "是否重新编辑？"
-        } else {
-            "Retry editing?"
-        }
+        text("retry_editing")
     }
 
     pub fn no_changes_detected() -> &'static str {
-        if is_chinese() {
-            "未检测到任何更改"
-        } else {
-            "No changes detected"
-        }
+        text("no_changes_detected")
     }
 
     pub fn provider_summary() -> &'static str {
-        if is_chinese() {
-            "供应商信息摘要"
-        } else {
-            "Provider Summary"
-        }
+        text("provider_summary")
     }
 
     pub fn confirm_save_changes() -> &'static str {
-        if is_chinese() {
-            "确认保存更改？"
-        } else {
-            "Save changes?"
-        }
+        text("confirm_save_changes")
     }
 
     pub fn editor_failed() -> &'static str {
-        if is_chinese() {
-            "编辑器失败"
-        } else {
-            "Editor failed"
-        }
+        text("editor_failed")
     }
 
     pub fn invalid_selection_format() -> &'static str {
-        if is_chinese() {
-            "无效的选择格式"
-        } else {
-            "Invalid selection format"
-        }
+        text("invalid_selection_format")
     }
 
-    // Provider Display Labels (for show_current and view_provider_detail)
     pub fn basic_info_section_header() -> &'static str {
-        if is_chinese() {
-            "基本信息 / Basic Info"
-        } else {
-            "Basic Info"
-        }
+        text("basic_info_section_header")
     }
 
     pub fn name_label_with_colon() -> &'static str {
-        if is_chinese() {
-            "名称"
-        } else {
-            "Name"
-        }
+        text("name_label_with_colon")
     }
 
     pub fn app_label_with_colon() -> &'static str {
-        if is_chinese() {
-            "应用"
-        } else {
-            "App"
-        }
+        text("app_label_with_colon")
     }
 
     pub fn api_config_section_header() -> &'static str {
-        if is_chinese() {
-            "API 配置 / API Configuration"
-        } else {
-            "API Configuration"
-        }
+        text("api_config_section_header")
     }
 
     pub fn model_config_section_header() -> &'static str {
-        if is_chinese() {
-            "模型配置 / Model Configuration"
-        } else {
-            "Model Configuration"
-        }
+        text("model_config_section_header")
     }
 
     pub fn main_model_label_with_colon() -> &'static str {
-        if is_chinese() {
-            "主模型"
-        } else {
-            "Main Model"
-        }
+        text("main_model_label_with_colon")
     }
 
     pub fn updated_config_header() -> &'static str {
-        if is_chinese() {
-            "修改后配置："
-        } else {
-            "Updated Configuration:"
-        }
+        text("updated_config_header")
     }
 
-    // Provider Add/Edit Messages
     pub fn generated_id_message(id: &str) -> String {
-        if is_chinese() {
-            format!("生成的 ID: {}", id)
-        } else {
-            format!("Generated ID: {}", id)
-        }
+        text_with_args("generated_id_message", &[("id", id)])
     }
 
     pub fn edit_fields_instruction() -> &'static str {
-        if is_chinese() {
-            "逐个编辑字段（直接回车保留当前值）：\n"
-        } else {
-            "Edit fields one by one (press Enter to keep current value):\n"
-        }
+        text("edit_fields_instruction")
     }
 
-    // ============================================
-    // MCP SERVER MANAGEMENT (MCP 服务器管理)
-    // ============================================
-
     pub fn mcp_management() -> &'static str {
-        if is_chinese() {
-            "🛠️  MCP 服务器管理"
-        } else {
-            "🛠️  MCP Server Management"
-        }
+        text("mcp_management")
     }
 
     pub fn no_mcp_servers() -> &'static str {
-        if is_chinese() {
-            "未找到 MCP 服务器。"
-        } else {
-            "No MCP servers found."
-        }
+        text("no_mcp_servers")
     }
 
     pub fn sync_all_servers() -> &'static str {
-        if is_chinese() {
-            "🔄 同步所有服务器"
-        } else {
-            "🔄 Sync All Servers"
-        }
+        text("sync_all_servers")
     }
 
     pub fn synced_successfully() -> &'static str {
-        if is_chinese() {
-            "✓ 所有 MCP 服务器同步成功"
-        } else {
-            "✓ All MCP servers synced successfully"
-        }
+        text("synced_successfully")
     }
 
-    // ============================================
-    // PROMPT MANAGEMENT (提示词管理)
-    // ============================================
-
     pub fn prompts_management() -> &'static str {
-        if is_chinese() {
-            "💬 提示词管理"
-        } else {
-            "💬 Prompt Management"
-        }
+        text("prompts_management")
     }
 
     pub fn no_prompts() -> &'static str {
-        if is_chinese() {
-            "未找到提示词预设。"
-        } else {
-            "No prompt presets found."
-        }
+        text("no_prompts")
     }
 
     pub fn switch_active_prompt() -> &'static str {
-        if is_chinese() {
-            "🔄 切换活动提示词"
-        } else {
-            "🔄 Switch Active Prompt"
-        }
+        text("switch_active_prompt")
     }
 
     pub fn no_prompts_available() -> &'static str {
-        if is_chinese() {
-            "没有可用的提示词。"
-        } else {
-            "No prompts available."
-        }
+        text("no_prompts_available")
     }
 
     pub fn select_prompt_to_activate() -> &'static str {
-        if is_chinese() {
-            "选择要激活的提示词："
-        } else {
-            "Select prompt to activate:"
-        }
+        text("select_prompt_to_activate")
     }
 
     pub fn activated_prompt(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已激活提示词 '{}'", id)
-        } else {
-            format!("✓ Activated prompt '{}'", id)
-        }
+        text_with_args("activated_prompt", &[("id", id)])
     }
 
     pub fn deactivated_prompt(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已取消激活提示词 '{}'", id)
-        } else {
-            format!("✓ Deactivated prompt '{}'", id)
-        }
+        text_with_args("deactivated_prompt", &[("id", id)])
     }
 
     pub fn prompt_cleared_note() -> &'static str {
-        if is_chinese() {
-            "实时文件已清空"
-        } else {
-            "Live prompt file has been cleared"
-        }
+        text("prompt_cleared_note")
     }
 
     pub fn prompt_synced_note() -> &'static str {
-        if is_chinese() {
-            "注意：提示词已同步到实时配置文件。"
-        } else {
-            "Note: The prompt has been synced to the live configuration file."
-        }
+        text("prompt_synced_note")
     }
 
-    // Configuration View
     pub fn current_configuration() -> &'static str {
-        if is_chinese() {
-            "👁️  当前配置"
-        } else {
-            "👁️  Current Configuration"
-        }
+        text("current_configuration")
     }
 
     pub fn provider_label() -> &'static str {
-        if is_chinese() {
-            "供应商："
-        } else {
-            "Provider:"
-        }
+        text("provider_label")
     }
 
     pub fn mcp_servers_label() -> &'static str {
-        if is_chinese() {
-            "MCP 服务器："
-        } else {
-            "MCP Servers:"
-        }
+        text("mcp_servers_label")
     }
 
     pub fn prompts_label() -> &'static str {
-        if is_chinese() {
-            "提示词："
-        } else {
-            "Prompts:"
-        }
+        text("prompts_label")
     }
 
     pub fn total() -> &'static str {
-        if is_chinese() {
-            "总计"
-        } else {
-            "Total"
-        }
+        text("total")
     }
 
     pub fn enabled() -> &'static str {
-        if is_chinese() {
-            "启用"
-        } else {
-            "Enabled"
-        }
+        text("enabled")
     }
 
     pub fn active() -> &'static str {
-        if is_chinese() {
-            "活动"
-        } else {
-            "Active"
-        }
+        text("active")
     }
 
     pub fn none() -> &'static str {
-        if is_chinese() {
-            "无"
-        } else {
-            "None"
-        }
+        text("none")
     }
 
-    // Settings
     pub fn settings_title() -> &'static str {
-        if is_chinese() {
-            "⚙️  设置"
-        } else {
-            "⚙️  Settings"
-        }
+        text("settings_title")
     }
 
     pub fn change_language() -> &'static str {
-        if is_chinese() {
-            "🌐 切换语言"
-        } else {
-            "🌐 Change Language"
-        }
+        text("change_language")
     }
 
     pub fn current_language_label() -> &'static str {
-        if is_chinese() {
-            "当前语言"
-        } else {
-            "Current Language"
-        }
+        text("current_language_label")
     }
 
     pub fn select_language() -> &'static str {
-        if is_chinese() {
-            "选择语言："
-        } else {
-            "Select language:"
-        }
+        text("select_language")
     }
 
     pub fn language_changed() -> &'static str {
-        if is_chinese() {
-            "✓ 语言已更改"
-        } else {
-            "✓ Language changed"
-        }
+        text("language_changed")
     }
 
-    // App Selection
     pub fn select_application() -> &'static str {
-        if is_chinese() {
-            "选择应用程序："
-        } else {
-            "Select application:"
-        }
+        text("select_application")
     }
 
     pub fn switched_to_app(app: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已切换到 {}", app)
-        } else {
-            format!("✓ Switched to {}", app)
-        }
+        text_with_args("switched_to_app", &[("app", app)])
     }
 
-    // Common
     pub fn press_enter() -> &'static str {
-        if is_chinese() {
-            "按 Enter 继续..."
-        } else {
-            "Press Enter to continue..."
-        }
+        text("press_enter")
     }
 
     pub fn error_prefix() -> &'static str {
-        if is_chinese() {
-            "错误"
-        } else {
-            "Error"
-        }
+        text("error_prefix")
     }
 
-    // Table Headers
     pub fn header_name() -> &'static str {
-        if is_chinese() {
-            "名称"
-        } else {
-            "Name"
-        }
+        text("header_name")
     }
 
     pub fn header_category() -> &'static str {
-        if is_chinese() {
-            "类别"
-        } else {
-            "Category"
-        }
+        text("header_category")
     }
 
     pub fn header_description() -> &'static str {
-        if is_chinese() {
-            "描述"
-        } else {
-            "Description"
-        }
+        text("header_description")
     }
 
-    // Config Management
     pub fn config_management() -> &'static str {
-        if is_chinese() {
-            "⚙️  配置文件管理"
-        } else {
-            "⚙️  Configuration Management"
-        }
+        text("config_management")
     }
 
     pub fn config_export() -> &'static str {
-        if is_chinese() {
-            "📤 导出配置"
-        } else {
-            "📤 Export Config"
-        }
+        text("config_export")
     }
 
     pub fn config_import() -> &'static str {
-        if is_chinese() {
-            "📥 导入配置"
-        } else {
-            "📥 Import Config"
-        }
+        text("config_import")
     }
 
     pub fn config_backup() -> &'static str {
-        if is_chinese() {
-            "💾 备份配置"
-        } else {
-            "💾 Backup Config"
-        }
+        text("config_backup")
     }
 
     pub fn config_restore() -> &'static str {
-        if is_chinese() {
-            "♻️  恢复配置"
-        } else {
-            "♻️  Restore Config"
-        }
+        text("config_restore")
     }
 
     pub fn config_validate() -> &'static str {
-        if is_chinese() {
-            "✓ 验证配置"
-        } else {
-            "✓ Validate Config"
-        }
+        text("config_validate")
     }
 
     pub fn config_common_snippet() -> &'static str {
-        if is_chinese() {
-            "🧩 通用配置片段"
-        } else {
-            "🧩 Common Config Snippet"
-        }
+        text("config_common_snippet")
     }
 
     pub fn config_reset() -> &'static str {
-        if is_chinese() {
-            "🔄 重置配置"
-        } else {
-            "🔄 Reset Config"
-        }
+        text("config_reset")
     }
 
     pub fn config_show_full() -> &'static str {
-        if is_chinese() {
-            "👁️  查看完整配置"
-        } else {
-            "👁️  Show Full Config"
-        }
+        text("config_show_full")
     }
 
     pub fn config_show_path() -> &'static str {
-        if is_chinese() {
-            "📍 显示配置路径"
-        } else {
-            "📍 Show Config Path"
-        }
+        text("config_show_path")
     }
 
     pub fn enter_export_path() -> &'static str {
-        if is_chinese() {
-            "输入导出文件路径："
-        } else {
-            "Enter export file path:"
-        }
+        text("enter_export_path")
     }
 
     pub fn enter_import_path() -> &'static str {
-        if is_chinese() {
-            "输入导入文件路径："
-        } else {
-            "Enter import file path:"
-        }
+        text("enter_import_path")
     }
 
     pub fn enter_restore_path() -> &'static str {
-        if is_chinese() {
-            "输入备份文件路径："
-        } else {
-            "Enter backup file path:"
-        }
+        text("enter_restore_path")
     }
 
     pub fn confirm_import() -> &'static str {
-        if is_chinese() {
-            "确定要导入配置吗？这将覆盖当前配置。"
-        } else {
-            "Are you sure you want to import? This will overwrite current configuration."
-        }
+        text("confirm_import")
     }
 
     pub fn confirm_reset() -> &'static str {
-        if is_chinese() {
-            "确定要重置配置吗？这将删除所有自定义设置。"
-        } else {
-            "Are you sure you want to reset? This will delete all custom settings."
-        }
+        text("confirm_reset")
     }
 
     pub fn common_config_snippet_editor_prompt(app: &str) -> String {
-        if is_chinese() {
-            format!("编辑 {app} 的通用配置片段（JSON 对象，留空则清除）：")
-        } else {
-            format!("Edit common config snippet for {app} (JSON object; empty to clear):")
-        }
+        text_with_args("common_config_snippet_editor_prompt", &[("app", app)])
     }
 
     pub fn common_config_snippet_invalid_json(err: &str) -> String {
-        if is_chinese() {
-            format!("JSON 无效：{err}")
-        } else {
-            format!("Invalid JSON: {err}")
-        }
+        text_with_args("common_config_snippet_invalid_json", &[("err", err)])
     }
 
     pub fn common_config_snippet_not_object() -> &'static str {
-        if is_chinese() {
-            "通用配置必须是 JSON 对象（例如：{\"env\":{...}}）"
-        } else {
-            "Common config must be a JSON object (e.g. {\"env\":{...}})"
-        }
+        text("common_config_snippet_not_object")
     }
 
     pub fn common_config_snippet_saved() -> &'static str {
-        if is_chinese() {
-            "✓ 已保存通用配置片段"
-        } else {
-            "✓ Common config snippet saved"
-        }
+        text("common_config_snippet_saved")
     }
 
     pub fn common_config_snippet_cleared() -> &'static str {
-        if is_chinese() {
-            "✓ 已清除通用配置片段"
-        } else {
-            "✓ Common config snippet cleared"
-        }
+        text("common_config_snippet_cleared")
     }
 
     pub fn common_config_snippet_apply_now() -> &'static str {
-        if is_chinese() {
-            "现在应用到当前供应商（写入 live 配置）？"
-        } else {
-            "Apply to current provider now (write live config)?"
-        }
+        text("common_config_snippet_apply_now")
     }
 
     pub fn common_config_snippet_no_current_provider() -> &'static str {
-        if is_chinese() {
-            "当前未选择供应商，已保存通用配置片段。"
-        } else {
-            "No current provider selected; common config snippet saved."
-        }
+        text("common_config_snippet_no_current_provider")
     }
 
     pub fn common_config_snippet_applied() -> &'static str {
-        if is_chinese() {
-            "✓ 已应用到 live 配置（请重启对应客户端）"
-        } else {
-            "✓ Applied to live config (restart the client)"
-        }
+        text("common_config_snippet_applied")
     }
 
     pub fn common_config_snippet_apply_hint() -> &'static str {
-        if is_chinese() {
-            "提示：切换一次供应商即可重新写入 live 配置。"
-        } else {
-            "Tip: switch provider once to re-write the live config."
-        }
+        text("common_config_snippet_apply_hint")
     }
 
     pub fn confirm_restore() -> &'static str {
-        if is_chinese() {
-            "确定要从备份恢复配置吗？"
-        } else {
-            "Are you sure you want to restore from backup?"
-        }
+        text("confirm_restore")
     }
 
     pub fn exported_to(path: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已导出到 '{}'", path)
-        } else {
-            format!("✓ Exported to '{}'", path)
-        }
+        text_with_args("exported_to", &[("path", path)])
     }
 
     pub fn imported_from(path: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已从 '{}' 导入", path)
-        } else {
-            format!("✓ Imported from '{}'", path)
-        }
+        text_with_args("imported_from", &[("path", path)])
     }
 
     pub fn backup_created(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已创建备份，ID: {}", id)
-        } else {
-            format!("✓ Backup created, ID: {}", id)
-        }
+        text_with_args("backup_created", &[("id", id)])
     }
 
     pub fn restored_from(path: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已从 '{}' 恢复", path)
-        } else {
-            format!("✓ Restored from '{}'", path)
-        }
+        text_with_args("restored_from", &[("path", path)])
     }
 
     pub fn config_valid() -> &'static str {
-        if is_chinese() {
-            "✓ 配置文件有效"
-        } else {
-            "✓ Configuration is valid"
-        }
+        text("config_valid")
     }
 
     pub fn config_reset_done() -> &'static str {
-        if is_chinese() {
-            "✓ 配置已重置为默认值"
-        } else {
-            "✓ Configuration reset to defaults"
-        }
+        text("config_reset_done")
     }
 
     pub fn file_overwrite_confirm(path: &str) -> String {
-        if is_chinese() {
-            format!("文件 '{}' 已存在，是否覆盖？", path)
-        } else {
-            format!("File '{}' exists. Overwrite?", path)
-        }
+        text_with_args("file_overwrite_confirm", &[("path", path)])
     }
 
-    // MCP Management Additional
     pub fn mcp_delete_server() -> &'static str {
-        if is_chinese() {
-            "🗑️  删除服务器"
-        } else {
-            "🗑️  Delete Server"
-        }
+        text("mcp_delete_server")
     }
 
     pub fn mcp_enable_server() -> &'static str {
-        if is_chinese() {
-            "✅ 启用服务器"
-        } else {
-            "✅ Enable Server"
-        }
+        text("mcp_enable_server")
     }
 
     pub fn mcp_disable_server() -> &'static str {
-        if is_chinese() {
-            "❌ 禁用服务器"
-        } else {
-            "❌ Disable Server"
-        }
+        text("mcp_disable_server")
     }
 
     pub fn mcp_import_servers() -> &'static str {
-        if is_chinese() {
-            "📥 从实时配置导入"
-        } else {
-            "📥 Import from Live Config"
-        }
+        text("mcp_import_servers")
     }
 
     pub fn mcp_validate_command() -> &'static str {
-        if is_chinese() {
-            "✓ 验证命令"
-        } else {
-            "✓ Validate Command"
-        }
+        text("mcp_validate_command")
     }
 
     pub fn select_server_to_delete() -> &'static str {
-        if is_chinese() {
-            "选择要删除的服务器："
-        } else {
-            "Select server to delete:"
-        }
+        text("select_server_to_delete")
     }
 
     pub fn select_server_to_enable() -> &'static str {
-        if is_chinese() {
-            "选择要启用的服务器："
-        } else {
-            "Select server to enable:"
-        }
+        text("select_server_to_enable")
     }
 
     pub fn select_server_to_disable() -> &'static str {
-        if is_chinese() {
-            "选择要禁用的服务器："
-        } else {
-            "Select server to disable:"
-        }
+        text("select_server_to_disable")
     }
 
     pub fn select_apps_to_enable() -> &'static str {
-        if is_chinese() {
-            "选择要启用的应用："
-        } else {
-            "Select apps to enable for:"
-        }
+        text("select_apps_to_enable")
     }
 
     pub fn mcp_enable_apps_help() -> &'static str {
-        if is_chinese() {
-            "空格 选择/取消选择，→ 全选，← 取消全选，Esc 返回；输入可过滤"
-        } else {
-            "Space to toggle, → select all, ← clear all, Esc to go back; type to filter"
-        }
+        text("mcp_enable_apps_help")
     }
 
     pub fn select_apps_to_disable() -> &'static str {
-        if is_chinese() {
-            "选择要禁用的应用："
-        } else {
-            "Select apps to disable for:"
-        }
+        text("select_apps_to_disable")
     }
 
     pub fn enter_command_to_validate() -> &'static str {
-        if is_chinese() {
-            "输入要验证的命令："
-        } else {
-            "Enter command to validate:"
-        }
+        text("enter_command_to_validate")
     }
 
     pub fn server_deleted(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已删除服务器 '{}'", id)
-        } else {
-            format!("✓ Deleted server '{}'", id)
-        }
+        text_with_args("server_deleted", &[("id", id)])
     }
 
     pub fn server_enabled(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已启用服务器 '{}'", id)
-        } else {
-            format!("✓ Enabled server '{}'", id)
-        }
+        text_with_args("server_enabled", &[("id", id)])
     }
 
     pub fn server_disabled(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已禁用服务器 '{}'", id)
-        } else {
-            format!("✓ Disabled server '{}'", id)
-        }
+        text_with_args("server_disabled", &[("id", id)])
     }
 
     pub fn servers_imported(count: usize) -> String {
-        if is_chinese() {
-            format!("✓ 已导入 {} 个服务器", count)
-        } else {
-            format!("✓ Imported {} servers", count)
-        }
+        let count = count.to_string();
+        text_with_args("servers_imported", &[("count", &count)])
     }
 
     pub fn command_valid(cmd: &str) -> String {
-        if is_chinese() {
-            format!("✓ 命令 '{}' 有效", cmd)
-        } else {
-            format!("✓ Command '{}' is valid", cmd)
-        }
+        text_with_args("command_valid", &[("cmd", cmd)])
     }
 
     pub fn command_invalid(cmd: &str) -> String {
-        if is_chinese() {
-            format!("✗ 命令 '{}' 未找到", cmd)
-        } else {
-            format!("✗ Command '{}' not found", cmd)
-        }
+        text_with_args("command_invalid", &[("cmd", cmd)])
     }
 
-    // Prompts Management Additional
     pub fn prompts_show_content() -> &'static str {
-        if is_chinese() {
-            "👁️  查看完整内容"
-        } else {
-            "👁️  View Full Content"
-        }
+        text("prompts_show_content")
     }
 
     pub fn prompts_delete() -> &'static str {
-        if is_chinese() {
-            "🗑️  删除提示词"
-        } else {
-            "🗑️  Delete Prompt"
-        }
+        text("prompts_delete")
     }
 
     pub fn prompts_view_current() -> &'static str {
-        if is_chinese() {
-            "📋 查看当前提示词"
-        } else {
-            "📋 View Current Prompt"
-        }
+        text("prompts_view_current")
     }
 
     pub fn select_prompt_to_view() -> &'static str {
-        if is_chinese() {
-            "选择要查看的提示词："
-        } else {
-            "Select prompt to view:"
-        }
+        text("select_prompt_to_view")
     }
 
     pub fn select_prompt_to_delete() -> &'static str {
-        if is_chinese() {
-            "选择要删除的提示词："
-        } else {
-            "Select prompt to delete:"
-        }
+        text("select_prompt_to_delete")
     }
 
     pub fn prompt_deleted(id: &str) -> String {
-        if is_chinese() {
-            format!("✓ 已删除提示词 '{}'", id)
-        } else {
-            format!("✓ Deleted prompt '{}'", id)
-        }
+        text_with_args("prompt_deleted", &[("id", id)])
     }
 
     pub fn no_active_prompt() -> &'static str {
-        if is_chinese() {
-            "当前没有激活的提示词。"
-        } else {
-            "No active prompt."
-        }
+        text("no_active_prompt")
     }
 
     pub fn cannot_delete_active() -> &'static str {
-        if is_chinese() {
-            "无法删除当前激活的提示词。"
-        } else {
-            "Cannot delete the active prompt."
-        }
+        text("cannot_delete_active")
     }
 
     pub fn no_servers_to_delete() -> &'static str {
-        if is_chinese() {
-            "没有可删除的服务器。"
-        } else {
-            "No servers to delete."
-        }
+        text("no_servers_to_delete")
     }
 
     pub fn no_prompts_to_delete() -> &'static str {
-        if is_chinese() {
-            "没有可删除的提示词。"
-        } else {
-            "No prompts to delete."
-        }
+        text("no_prompts_to_delete")
     }
 
-    // Provider Speedtest
     pub fn speedtest_endpoint() -> &'static str {
-        if is_chinese() {
-            "🚀 测试端点速度"
-        } else {
-            "🚀 Speedtest endpoint"
-        }
+        text("speedtest_endpoint")
     }
 
     pub fn back() -> &'static str {
-        if is_chinese() {
-            "← 返回"
-        } else {
-            "← Back"
-        }
+        text("back")
     }
 }

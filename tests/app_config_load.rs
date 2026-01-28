@@ -8,7 +8,9 @@ use support::{ensure_test_home, reset_test_fs, test_mutex};
 
 fn cfg_path() -> PathBuf {
     let home = std::env::var("HOME").expect("HOME should be set by ensure_test_home");
-    PathBuf::from(home).join(".cc-switch-cli").join("config.json")
+    PathBuf::from(home)
+        .join(".cc-switch-cli")
+        .join("config.json")
 }
 
 #[test]

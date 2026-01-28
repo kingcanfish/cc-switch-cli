@@ -112,7 +112,7 @@ impl McpService {
 
     /// 将 MCP 服务器同步到所有启用的应用
     fn sync_server_to_apps(state: &AppState, server: &McpServer) -> Result<(), AppError> {
-        let cfg = state.config.read()?;
+        let _cfg = state.config.read()?;
 
         for app in server.apps.enabled_apps() {
             Self::sync_server_to_app_internal(server, &app)?;
@@ -127,7 +127,7 @@ impl McpService {
         server: &McpServer,
         app: &AppType,
     ) -> Result<(), AppError> {
-        let cfg = state.config.read()?;
+        let _cfg = state.config.read()?;
         Self::sync_server_to_app_internal(server, app)
     }
 

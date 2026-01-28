@@ -262,7 +262,10 @@ fn show_path() -> Result<(), AppError> {
         }
     } else {
         println!("\n{} Configuration file does not exist", error("✗"));
-        println!("{}", info("Run cc-switch-cli to create default configuration."));
+        println!(
+            "{}",
+            info("Run cc-switch-cli to create default configuration.")
+        );
     }
 
     // Show backup directory
@@ -517,7 +520,10 @@ fn restore_config(backup_id: Option<&str>, file_path: Option<&Path>) -> Result<(
     if backups.is_empty() {
         println!();
         println!("{}", info("No backups found."));
-        println!("{}", info("Create a backup first: cc-switch-cli config backup"));
+        println!(
+            "{}",
+            info("Create a backup first: cc-switch-cli config backup")
+        );
         return Ok(());
     }
 
