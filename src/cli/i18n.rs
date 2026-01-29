@@ -87,15 +87,47 @@ struct LocaleStore {
 }
 
 fn load_locale(yaml: &str) -> HashMap<String, &'static str> {
-    let parsed: HashMap<String, String> =
+    let parsed: serde_yaml::Value =
         serde_yaml::from_str(yaml).expect("Failed to parse locale YAML");
-    parsed
-        .into_iter()
+    let mut flat: HashMap<String, String> = HashMap::new();
+    flatten_locale_value(None, &parsed, &mut flat);
+    flat.into_iter()
         .map(|(k, v)| {
             let value: &'static str = Box::leak(v.into_boxed_str());
             (k, value)
         })
         .collect()
+}
+
+fn flatten_locale_value(
+    prefix: Option<&str>,
+    value: &serde_yaml::Value,
+    out: &mut HashMap<String, String>,
+) {
+    match value {
+        serde_yaml::Value::Mapping(map) => {
+            for (key, value) in map {
+                let key = key
+                    .as_str()
+                    .unwrap_or_else(|| panic!("Locale keys must be strings: {key:?}"));
+                let next = if let Some(prefix_value) = prefix {
+                    format!("{prefix_value}_{key}")
+                } else {
+                    key.to_string()
+                };
+                flatten_locale_value(Some(&next), value, out);
+            }
+        }
+        serde_yaml::Value::String(value) => {
+            let key = prefix
+                .unwrap_or_else(|| panic!("Locale root must be a mapping, got string"));
+            out.insert(key.to_string(), value.clone());
+        }
+        other => {
+            let key = prefix.unwrap_or("<root>");
+            panic!("Locale value for '{key}' must be a string or mapping, got {other:?}");
+        }
+    }
 }
 
 fn locale_store() -> &'static LocaleStore {

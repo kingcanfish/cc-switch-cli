@@ -59,6 +59,9 @@ pub enum Commands {
     #[command(subcommand)]
     Env(commands::env::EnvCommand),
 
+    /// Self-update the CLI
+    Update,
+
     /// Enter interactive mode
     #[command(alias = "ui")]
     Interactive,

@@ -1,297 +1,501 @@
-entity_provider: "provider"
-entity_server: "server"
-entity_prompt: "prompt"
-entity_added_success: "✓ Successfully added {entity_type} '{name}'"
-entity_updated_success: "✓ Successfully updated {entity_type} '{name}'"
-entity_deleted_success: "✓ Successfully deleted {entity_type} '{name}'"
-entity_not_found: "{entity_type} not found: {id}"
-confirm_create_entity: "\nConfirm create this {entity_type}?"
-confirm_update_entity: "\nConfirm update this {entity_type}?"
-confirm_delete_entity: "\nConfirm delete {entity_type} '{name}'?"
-select_to_delete_entity: "Select {entity_type} to delete:"
-no_entities_to_delete: "No {entity_type} available for deletion"
-welcome_title: "    🎯 CC-Switch Interactive Mode"
+entity:
+  provider: "provider"
+  server: "server"
+  prompt: "prompt"
+  added_success: "✓ Successfully added {entity_type} '{name}'"
+  updated_success: "✓ Successfully updated {entity_type} '{name}'"
+  deleted_success: "✓ Successfully deleted {entity_type} '{name}'"
+  not_found: "{entity_type} not found: {id}"
+
+confirm:
+  create_entity: "\nConfirm create this {entity_type}?"
+  update_entity: "\nConfirm update this {entity_type}?"
+  delete_entity: "\nConfirm delete {entity_type} '{name}'?"
+  delete: "Are you sure you want to delete provider '{id}'?"
+  save_changes: "Save changes?"
+  import: "Are you sure you want to import? This will overwrite current configuration."
+  reset: "Are you sure you want to reset? This will delete all custom settings."
+  restore: "Are you sure you want to restore from backup?"
+
+select:
+  to_delete_entity: "Select {entity_type} to delete:"
+  provider_add_mode: "Select provider type:"
+  filter_help: "Esc to go back; type to filter"
+  provider_to_switch: "Select provider to switch to:"
+  provider_to_delete: "Select provider to delete:"
+  auth_method_help: "Select authentication method for Gemini"
+  provider_to_edit: "Select provider to edit:"
+  prompt_to_activate: "Select prompt to activate:"
+  language: "Select language:"
+  application: "Select application:"
+  server_to_delete: "Select server to delete:"
+  server_to_enable: "Select server to enable:"
+  server_to_disable: "Select server to disable:"
+  apps_to_enable: "Select apps to enable for:"
+  apps_to_disable: "Select apps to disable for:"
+  prompt_to_view: "Select prompt to view:"
+  prompt_to_delete: "Select prompt to delete:"
+
+no:
+  entities_to_delete: "No {entity_type} available for deletion"
+  providers: "No providers found."
+  other_providers: "No other providers to switch to."
+  deletable_providers: "No providers available for deletion (cannot delete current provider)."
+  providers_hint: "Use 'cc-switch-cli provider add' to create a new provider."
+  editable_providers: "No providers available for editing"
+  changes_detected: "No changes detected"
+  mcp_servers: "No MCP servers found."
+  prompts: "No prompt presets found."
+  prompts_available: "No prompts available."
+  active_prompt: "No active prompt."
+  servers_to_delete: "No servers to delete."
+  prompts_to_delete: "No prompts to delete."
+
+welcome:
+  title: "    🎯 CC-Switch Interactive Mode"
+
 application: "Application"
+
 goodbye: "👋 Goodbye!"
-main_menu_prompt: "What would you like to do? (Current: {app})"
-main_menu_help: "↑↓ to move, ←→ to switch app, / to search, Enter to select, Esc to clear/exit"
-main_menu_search_prompt: "Enter search keyword (empty/Esc to clear):"
-main_menu_filtering: "🔎 Search: {query}"
-main_menu_no_matches: "No matching menu items"
-menu_manage_providers: "🔌 Manage Providers"
-menu_manage_mcp: "🛠️  Manage MCP Servers"
-menu_manage_prompts: "💬 Manage Prompts"
-menu_manage_config: "⚙️  Manage Configuration"
-menu_view_config: "👁️  View Current Configuration"
-menu_switch_app: "🔄 Switch Application"
-menu_settings: "⚙️  Settings"
-menu_exit: "🚪 Exit"
-provider_management: "🔌 Provider Management"
-no_providers: "No providers found."
-view_current_provider: "📋 View Current Provider Details"
-switch_provider: "🔄 Switch Provider"
-add_provider: "➕ Add Provider"
-add_official_provider: "Add Official Provider"
-add_third_party_provider: "Add Third-Party Provider"
-select_provider_add_mode: "Select provider type:"
-delete_provider: "🗑️  Delete Provider"
+
+main_menu:
+  prompt: "What would you like to do? (Current: {app})"
+  help: "↑↓ to move, ←→ to switch app, / to search, Enter to select, Esc to clear/exit"
+  search_prompt: "Enter search keyword (empty/Esc to clear):"
+  filtering: "🔎 Search: {query}"
+  no_matches: "No matching menu items"
+
+menu:
+  manage_providers: "🔌 Manage Providers"
+  manage_mcp: "🛠️  Manage MCP Servers"
+  manage_prompts: "💬 Manage Prompts"
+  manage_config: "⚙️  Manage Configuration"
+  view_config: "👁️  View Current Configuration"
+  switch_app: "🔄 Switch Application"
+  settings: "⚙️  Settings"
+  exit: "🚪 Exit"
+
+provider:
+  management: "🔌 Provider Management"
+  name_label: "Provider Name:"
+  name_help: "Required, friendly display name"
+  name_help_edit: "Required, press Enter to keep"
+  name_placeholder: "OpenAI"
+  name_empty_error: "Provider name cannot be empty"
+  not_found: "Provider not found: {id}"
+  name_prompt: "Provider Name:"
+  config_summary: "=== Provider Configuration Summary ==="
+  id_cannot_be_changed: "Provider ID cannot be changed"
+  summary: "Provider Summary"
+  label: "Provider:"
+
+view:
+  current_provider: "📋 View Current Provider Details"
+
+switch:
+  provider: "🔄 Switch Provider"
+  active_prompt: "🔄 Switch Active Prompt"
+
+add:
+  provider: "➕ Add Provider"
+  official_provider: "Add Official Provider"
+  third_party_provider: "Add Third-Party Provider"
+
+delete:
+  provider: "🗑️  Delete Provider"
+
 back_to_main: "⬅️  Back to Main Menu"
-choose_action: "Choose an action:"
-esc_to_go_back_help: "Esc to go back"
-select_filter_help: "Esc to go back; type to filter"
-current_provider_details: "Current Provider Details"
-only_one_provider: "Only one provider available. Cannot switch."
-no_other_providers: "No other providers to switch to."
-select_provider_to_switch: "Select provider to switch to:"
-switched_to_provider: "✓ Switched to provider '{id}'"
-restart_note: "Note: Restart your CLI client to apply the changes."
-no_deletable_providers: "No providers available for deletion (cannot delete current provider)."
-select_provider_to_delete: "Select provider to delete:"
-confirm_delete: "Are you sure you want to delete provider '{id}'?"
+
+choose:
+  action: "Choose an action:"
+  edit_mode: "Choose edit mode:"
+
+esc:
+  to_go_back_help: "Esc to go back"
+
+current:
+  provider_details: "Current Provider Details"
+  config_header: "Current Configuration:"
+  provider_synced_warning: "⚠ This provider is currently active, changes synced to live config"
+  config_label: "Current Config:"
+  configuration: "👁️  Current Configuration"
+  language_label: "Current Language"
+
+only:
+  one_provider: "Only one provider available. Cannot switch."
+
+switched:
+  to_provider: "✓ Switched to provider '{id}'"
+  to_app: "✓ Switched to {app}"
+
+restart:
+  note: "Note: Restart your CLI client to apply the changes."
+
 cancelled: "Cancelled."
-deleted_provider: "✓ Deleted provider '{id}'"
-provider_name_label: "Provider Name:"
-provider_name_help: "Required, friendly display name"
-provider_name_help_edit: "Required, press Enter to keep"
-provider_name_placeholder: "OpenAI"
-provider_name_empty_error: "Provider name cannot be empty"
-website_url_label: "Website URL (optional):"
-website_url_help: "Provider's website, press Enter to skip"
-website_url_help_edit: "Leave blank to keep, Enter to skip"
-website_url_placeholder: "https://openai.com"
-no_providers_hint: "Use 'cc-switch-cli provider add' to create a new provider."
-app_config_not_found: "Application {app} configuration not found"
-provider_not_found: "Provider not found: {id}"
-generated_id: "Generated ID: {id}"
-configure_optional_fields_prompt: "Configure optional fields (notes, sort index)?"
-current_config_header: "Current Configuration:"
-modify_provider_config_prompt: "Modify provider configuration (API Key, Base URL, etc.)?"
-modify_optional_fields_prompt: "Modify optional fields (notes, sort index)?"
-current_provider_synced_warning: "⚠ This provider is currently active, changes synced to live config"
-input_failed_error: "Input failed: {err}"
-cannot_delete_current_provider: "Cannot delete the current active provider. Please switch to another provider first."
-provider_name_prompt: "Provider Name:"
-config_claude_header: "Configure Claude Provider:"
-api_key_label: "API Key:"
-api_key_help: "Leave empty to use default"
-base_url_label: "Base URL:"
-base_url_placeholder: "e.g., https://api.anthropic.com"
-configure_model_names_prompt: "Configure model names?"
-model_default_label: "Default Model:"
-model_default_help: "Leave empty to use Claude Code default"
-model_haiku_label: "Haiku Model:"
-model_haiku_placeholder: "e.g., claude-3-5-haiku-20241022"
-model_sonnet_label: "Sonnet Model:"
-model_sonnet_placeholder: "e.g., claude-3-5-sonnet-20241022"
-model_opus_label: "Opus Model:"
-model_opus_placeholder: "e.g., claude-3-opus-20240229"
-config_codex_header: "Configure Codex Provider:"
-openai_api_key_label: "OpenAI API Key:"
-anthropic_api_key_label: "Anthropic API Key:"
-config_toml_label: "Config Content (TOML):"
-config_toml_help: "Press Esc then Enter to submit"
-config_toml_placeholder: "Leave empty to use default config"
-codex_auth_mode_info: "⚠ Choose how Codex authenticates (where the API key is read from)"
-codex_auth_mode_label: "Auth Mode:"
-codex_auth_mode_help: "OpenAI auth uses auth.json/credential store; env var mode uses env_key (missing env var will error)"
-codex_auth_mode_openai: "OpenAI auth (recommended, no env var)"
-codex_auth_mode_env_var: "Environment variable (env_key, requires export)"
-codex_official_provider_tip: "Tip: Official provider uses Codex login credentials (`codex login` may open a browser); no API key required"
-codex_env_key_info: "⚠ Env var mode: Codex will read the API key from the specified environment variable"
-codex_env_key_label: "Environment Variable Name:"
-codex_env_key_help: "Codex will read API key from this env var (default: OPENAI_API_KEY)"
-codex_wire_api_label: "API Format:"
-codex_wire_api_help: "chat = Chat Completions API (most providers), responses = OpenAI Responses API"
-codex_env_reminder: "⚠ Make sure to set the {env_key} environment variable with your API key\n  Example: export {env_key}=\"your-api-key\""
-codex_openai_auth_info: "✓ OpenAI auth mode: Codex will use auth.json/credential store; no OPENAI_API_KEY env var required"
-codex_dual_write_info: "✓ Dual-write mode enabled (compatible with all Codex versions)\n• Legacy Codex: Will use API Key from auth.json\n• Codex 0.64+: Can use env variable {env_key} (more secure)\nExample: export {env_key}=\"your-api-key\""
-use_current_config_prompt: "Use current configuration?"
-use_current_config_help: "Select No to enter custom input mode"
-input_toml_config: "Enter TOML config (multiple lines, empty line to finish):"
-direct_enter_to_finish: "Press Enter to finish"
-current_config_label: "Current Config:"
-config_toml_header: "Config.toml Configuration:"
-config_gemini_header: "Configure Gemini Provider:"
-auth_type_label: "Auth Type:"
-auth_type_api_key: "API Key"
-auth_type_service_account: "Service Account (ADC)"
-gemini_api_key_label: "Gemini API Key:"
-gemini_base_url_label: "Base URL:"
-gemini_base_url_help: "Leave empty to use official API"
-gemini_base_url_placeholder: "e.g., https://generativelanguage.googleapis.com"
-adc_project_id_label: "GCP Project ID:"
-adc_location_label: "GCP Location:"
-adc_location_placeholder: "e.g., us-central1"
-google_oauth_official: "Google OAuth (Official)"
-packycode_api_key: "PackyCode API Key"
-generic_api_key: "Generic API Key"
-select_auth_method_help: "Select authentication method for Gemini"
-use_google_oauth_warning: "Using Google OAuth, API Key config will be cleared"
-packycode_api_key_help: "API Key obtained from PackyCode"
-packycode_endpoint_help: "PackyCode API endpoint"
-generic_api_key_help: "Generic Gemini API Key"
-notes_label: "Notes:"
-notes_placeholder: "Optional notes"
-sort_index_label: "Sort Index:"
-sort_index_help: "Lower numbers appear first, leave empty to sort by creation time"
-sort_index_placeholder: "e.g., 1, 2, 3..."
-invalid_sort_index: "Sort index must be a valid number"
-optional_fields_config: "Optional Fields Configuration:"
-notes_example_placeholder: "Custom provider for testing"
-notes_help_edit: "Additional notes about this provider, press Enter to keep current value"
-notes_help_new: "Additional notes about this provider, press Enter to skip"
-sort_index_help_edit: "Number for display order, press Enter to keep current value"
-sort_index_help_new: "Number for display order, press Enter to skip"
-invalid_sort_index_number: "Sort index must be a number"
-provider_config_summary: "=== Provider Configuration Summary ==="
-id_label: "ID"
-website_label: "Website"
-core_config_label: "Core Configuration:"
-model_label: "Model"
-config_toml_lines: "Config (TOML): {count} lines"
-optional_fields_label: "Optional Fields:"
-notes_label_colon: "Notes"
-sort_index_label_colon: "Sort Index"
-id_label_colon: "ID"
-url_label_colon: "URL"
-api_url_label_colon: "API URL"
-summary_divider: "======================"
-basic_info_header: "Basic Info"
-name_display_label: "Name"
-app_display_label: "App"
-notes_display_label: "Notes"
-sort_index_display_label: "Sort Index"
-config_info_header: "Configuration"
-api_key_display_label: "API Key"
-base_url_display_label: "Base URL"
-model_config_header: "Model Configuration"
-default_model_display: "Default"
-haiku_model_display: "Haiku"
-sonnet_model_display: "Sonnet"
-opus_model_display: "Opus"
-auth_type_display_label: "Auth Type"
-project_id_display_label: "Project ID"
-location_display_label: "Location"
-edit_provider_menu: "➕ Edit Provider"
-no_editable_providers: "No providers available for editing"
-select_provider_to_edit: "Select provider to edit:"
-choose_edit_mode: "Choose edit mode:"
-edit_mode_interactive: "📝 Interactive editing (step-by-step prompts)"
-edit_mode_json_editor: "✏️  JSON editing (use external editor)"
+
+deleted:
+  provider: "✓ Deleted provider '{id}'"
+
+website:
+  url_label: "Website URL (optional):"
+  url_help: "Provider's website, press Enter to skip"
+  url_help_edit: "Leave blank to keep, Enter to skip"
+  url_placeholder: "https://openai.com"
+  label: "Website"
+
+app:
+  config_not_found: "Application {app} configuration not found"
+  display_label: "App"
+  label_with_colon: "App"
+
+generated:
+  id: "Generated ID: {id}"
+  id_message: "Generated ID: {id}"
+
+configure:
+  optional_fields_prompt: "Configure optional fields (notes, sort index)?"
+  model_names_prompt: "Configure model names?"
+
+modify:
+  provider_config_prompt: "Modify provider configuration (API Key, Base URL, etc.)?"
+  optional_fields_prompt: "Modify optional fields (notes, sort index)?"
+
+input:
+  failed_error: "Input failed: {err}"
+  toml_config: "Enter TOML config (multiple lines, empty line to finish):"
+
+cannot:
+  delete_current_provider: "Cannot delete the current active provider. Please switch to another provider first."
+  delete_active: "Cannot delete the active prompt."
+
+config:
+  claude_header: "Configure Claude Provider:"
+  codex_header: "Configure Codex Provider:"
+  toml_label: "Config Content (TOML):"
+  toml_help: "Press Esc then Enter to submit"
+  toml_placeholder: "Leave empty to use default config"
+  toml_header: "Config.toml Configuration:"
+  gemini_header: "Configure Gemini Provider:"
+  toml_lines: "Config (TOML): {count} lines"
+  info_header: "Configuration"
+  management: "⚙️  Configuration Management"
+  export: "📤 Export Config"
+  import: "📥 Import Config"
+  backup: "💾 Backup Config"
+  restore: "♻️  Restore Config"
+  validate: "✓ Validate Config"
+  common_snippet: "🧩 Common Config Snippet"
+  reset: "🔄 Reset Config"
+  show_full: "👁️  Show Full Config"
+  show_path: "📍 Show Config Path"
+  valid: "✓ Configuration is valid"
+  reset_done: "✓ Configuration reset to defaults"
+
+api:
+  key_label: "API Key:"
+  key_help: "Leave empty to use default"
+  url_label_colon: "API URL"
+  key_display_label: "API Key"
+
+base:
+  url_label: "Base URL:"
+  url_placeholder: "e.g., https://api.anthropic.com"
+  url_display_label: "Base URL"
+
+model:
+  default_label: "Default Model:"
+  default_help: "Leave empty to use Claude Code default"
+  haiku_label: "Haiku Model:"
+  haiku_placeholder: "e.g., claude-3-5-haiku-20241022"
+  sonnet_label: "Sonnet Model:"
+  sonnet_placeholder: "e.g., claude-3-5-sonnet-20241022"
+  opus_label: "Opus Model:"
+  opus_placeholder: "e.g., claude-3-opus-20240229"
+  label: "Model"
+
+openai:
+  api_key_label: "OpenAI API Key:"
+
+anthropic:
+  api_key_label: "Anthropic API Key:"
+
+codex:
+  auth_mode_info: "⚠ Choose how Codex authenticates (where the API key is read from)"
+  auth_mode_label: "Auth Mode:"
+  auth_mode_help: "OpenAI auth uses auth.json/credential store; env var mode uses env_key (missing env var will error)"
+  auth_mode_openai: "OpenAI auth (recommended, no env var)"
+  auth_mode_env_var: "Environment variable (env_key, requires export)"
+  official_provider_tip: "Tip: Official provider uses Codex login credentials (`codex login` may open a browser); no API key required"
+  env_key_info: "⚠ Env var mode: Codex will read the API key from the specified environment variable"
+  env_key_label: "Environment Variable Name:"
+  env_key_help: "Codex will read API key from this env var (default: OPENAI_API_KEY)"
+  wire_api_label: "API Format:"
+  wire_api_help: "chat = Chat Completions API (most providers), responses = OpenAI Responses API"
+  env_reminder: "⚠ Make sure to set the {env_key} environment variable with your API key\n  Example: export {env_key}=\"your-api-key\""
+  openai_auth_info: "✓ OpenAI auth mode: Codex will use auth.json/credential store; no OPENAI_API_KEY env var required"
+  dual_write_info: "✓ Dual-write mode enabled (compatible with all Codex versions)\n• Legacy Codex: Will use API Key from auth.json\n• Codex 0.64+: Can use env variable {env_key} (more secure)\nExample: export {env_key}=\"your-api-key\""
+
+use:
+  current_config_prompt: "Use current configuration?"
+  current_config_help: "Select No to enter custom input mode"
+  google_oauth_warning: "Using Google OAuth, API Key config will be cleared"
+
+direct:
+  enter_to_finish: "Press Enter to finish"
+
+auth:
+  type_label: "Auth Type:"
+  type_api_key: "API Key"
+  type_service_account: "Service Account (ADC)"
+  type_display_label: "Auth Type"
+
+gemini:
+  api_key_label: "Gemini API Key:"
+  base_url_label: "Base URL:"
+  base_url_help: "Leave empty to use official API"
+  base_url_placeholder: "e.g., https://generativelanguage.googleapis.com"
+
+adc:
+  project_id_label: "GCP Project ID:"
+  location_label: "GCP Location:"
+  location_placeholder: "e.g., us-central1"
+
+google:
+  oauth_official: "Google OAuth (Official)"
+
+packycode:
+  api_key: "PackyCode API Key"
+  api_key_help: "API Key obtained from PackyCode"
+  endpoint_help: "PackyCode API endpoint"
+
+generic:
+  api_key: "Generic API Key"
+  api_key_help: "Generic Gemini API Key"
+
+notes:
+  label: "Notes:"
+  placeholder: "Optional notes"
+  example_placeholder: "Custom provider for testing"
+  help_edit: "Additional notes about this provider, press Enter to keep current value"
+  help_new: "Additional notes about this provider, press Enter to skip"
+  label_colon: "Notes"
+  display_label: "Notes"
+
+sort_index:
+  label: "Sort Index:"
+  help: "Lower numbers appear first, leave empty to sort by creation time"
+  placeholder: "e.g., 1, 2, 3..."
+  help_edit: "Number for display order, press Enter to keep current value"
+  help_new: "Number for display order, press Enter to skip"
+  label_colon: "Sort Index"
+  display_label: "Sort Index"
+
+invalid:
+  sort_index: "Sort index must be a valid number"
+  sort_index_number: "Sort index must be a number"
+  json_syntax: "Invalid JSON syntax"
+  provider_structure: "Invalid provider structure"
+  selection_format: "Invalid selection format"
+
+optional:
+  fields_config: "Optional Fields Configuration:"
+  fields_label: "Optional Fields:"
+
+id:
+  label: "ID"
+  label_colon: "ID"
+
+core:
+  config_label: "Core Configuration:"
+
+url:
+  label_colon: "URL"
+
+summary:
+  divider: "======================"
+
+basic_info:
+  header: "Basic Info"
+  section_header: "Basic Info"
+
+name:
+  display_label: "Name"
+  label_with_colon: "Name"
+
+model_config:
+  header: "Model Configuration"
+  section_header: "Model Configuration"
+
+default:
+  model_display: "Default"
+
+haiku:
+  model_display: "Haiku"
+
+sonnet:
+  model_display: "Sonnet"
+
+opus:
+  model_display: "Opus"
+
+project:
+  id_display_label: "Project ID"
+
+location:
+  display_label: "Location"
+
+edit:
+  provider_menu: "➕ Edit Provider"
+  mode_interactive: "📝 Interactive editing (step-by-step prompts)"
+  mode_json_editor: "✏️  JSON editing (use external editor)"
+  fields_instruction: "Edit fields one by one (press Enter to keep current value):\n"
+
 cancel: "❌ Cancel"
-opening_external_editor: "Opening external editor..."
-invalid_json_syntax: "Invalid JSON syntax"
-invalid_provider_structure: "Invalid provider structure"
-provider_id_cannot_be_changed: "Provider ID cannot be changed"
-retry_editing: "Retry editing?"
-no_changes_detected: "No changes detected"
-provider_summary: "Provider Summary"
-confirm_save_changes: "Save changes?"
-editor_failed: "Editor failed"
-invalid_selection_format: "Invalid selection format"
-basic_info_section_header: "Basic Info"
-name_label_with_colon: "Name"
-app_label_with_colon: "App"
-api_config_section_header: "API Configuration"
-model_config_section_header: "Model Configuration"
-main_model_label_with_colon: "Main Model"
-updated_config_header: "Updated Configuration:"
-generated_id_message: "Generated ID: {id}"
-edit_fields_instruction: "Edit fields one by one (press Enter to keep current value):\n"
-mcp_management: "🛠️  MCP Server Management"
-no_mcp_servers: "No MCP servers found."
-sync_all_servers: "🔄 Sync All Servers"
-synced_successfully: "✓ All MCP servers synced successfully"
-prompts_management: "💬 Prompt Management"
-no_prompts: "No prompt presets found."
-switch_active_prompt: "🔄 Switch Active Prompt"
-no_prompts_available: "No prompts available."
-select_prompt_to_activate: "Select prompt to activate:"
-activated_prompt: "✓ Activated prompt '{id}'"
-deactivated_prompt: "✓ Deactivated prompt '{id}'"
-prompt_cleared_note: "Live prompt file has been cleared"
-prompt_synced_note: "Note: The prompt has been synced to the live configuration file."
-current_configuration: "👁️  Current Configuration"
-provider_label: "Provider:"
-mcp_servers_label: "MCP Servers:"
-prompts_label: "Prompts:"
+
+opening:
+  external_editor: "Opening external editor..."
+
+retry:
+  editing: "Retry editing?"
+
+editor:
+  failed: "Editor failed"
+
+api_config:
+  section_header: "API Configuration"
+
+main:
+  model_label_with_colon: "Main Model"
+
+updated:
+  config_header: "Updated Configuration:"
+
+mcp:
+  management: "🛠️  MCP Server Management"
+  servers_label: "MCP Servers:"
+  delete_server: "🗑️  Delete Server"
+  enable_server: "✅ Enable Server"
+  disable_server: "❌ Disable Server"
+  import_servers: "📥 Import from Live Config"
+  validate_command: "✓ Validate Command"
+  enable_apps_help: "Space to toggle, → select all, ← clear all, Esc to go back; type to filter"
+
+sync:
+  all_servers: "🔄 Sync All Servers"
+
+synced:
+  successfully: "✓ All MCP servers synced successfully"
+
+prompts:
+  management: "💬 Prompt Management"
+  label: "Prompts:"
+  show_content: "👁️  View Full Content"
+  delete: "🗑️  Delete Prompt"
+  view_current: "📋 View Current Prompt"
+
+activated:
+  prompt: "✓ Activated prompt '{id}'"
+
+deactivated:
+  prompt: "✓ Deactivated prompt '{id}'"
+
+prompt:
+  cleared_note: "Live prompt file has been cleared"
+  synced_note: "Note: The prompt has been synced to the live configuration file."
+  deleted: "✓ Deleted prompt '{id}'"
+
 total: "Total"
+
 enabled: "Enabled"
+
 active: "Active"
+
 none: "None"
-settings_title: "⚙️  Settings"
-change_language: "🌐 Change Language"
-current_language_label: "Current Language"
-select_language: "Select language:"
-language_changed: "✓ Language changed"
-select_application: "Select application:"
-switched_to_app: "✓ Switched to {app}"
-press_enter: "Press Enter to continue..."
-error_prefix: "Error"
-header_name: "Name"
-header_category: "Category"
-header_description: "Description"
-config_management: "⚙️  Configuration Management"
-config_export: "📤 Export Config"
-config_import: "📥 Import Config"
-config_backup: "💾 Backup Config"
-config_restore: "♻️  Restore Config"
-config_validate: "✓ Validate Config"
-config_common_snippet: "🧩 Common Config Snippet"
-config_reset: "🔄 Reset Config"
-config_show_full: "👁️  Show Full Config"
-config_show_path: "📍 Show Config Path"
-enter_export_path: "Enter export file path:"
-enter_import_path: "Enter import file path:"
-enter_restore_path: "Enter backup file path:"
-confirm_import: "Are you sure you want to import? This will overwrite current configuration."
-confirm_reset: "Are you sure you want to reset? This will delete all custom settings."
-common_config_snippet_editor_prompt: "Edit common config snippet for {app} (JSON object; empty to clear):"
-common_config_snippet_invalid_json: "Invalid JSON: {err}"
-common_config_snippet_not_object: "Common config must be a JSON object (e.g. {\"env\":{...}})"
-common_config_snippet_saved: "✓ Common config snippet saved"
-common_config_snippet_cleared: "✓ Common config snippet cleared"
-common_config_snippet_apply_now: "Apply to current provider now (write live config)?"
-common_config_snippet_no_current_provider: "No current provider selected; common config snippet saved."
-common_config_snippet_applied: "✓ Applied to live config (restart the client)"
-common_config_snippet_apply_hint: "Tip: switch provider once to re-write the live config."
-confirm_restore: "Are you sure you want to restore from backup?"
-exported_to: "✓ Exported to '{path}'"
-imported_from: "✓ Imported from '{path}'"
-backup_created: "✓ Backup created, ID: {id}"
-restored_from: "✓ Restored from '{path}'"
-config_valid: "✓ Configuration is valid"
-config_reset_done: "✓ Configuration reset to defaults"
-file_overwrite_confirm: "File '{path}' exists. Overwrite?"
-mcp_delete_server: "🗑️  Delete Server"
-mcp_enable_server: "✅ Enable Server"
-mcp_disable_server: "❌ Disable Server"
-mcp_import_servers: "📥 Import from Live Config"
-mcp_validate_command: "✓ Validate Command"
-select_server_to_delete: "Select server to delete:"
-select_server_to_enable: "Select server to enable:"
-select_server_to_disable: "Select server to disable:"
-select_apps_to_enable: "Select apps to enable for:"
-mcp_enable_apps_help: "Space to toggle, → select all, ← clear all, Esc to go back; type to filter"
-select_apps_to_disable: "Select apps to disable for:"
-enter_command_to_validate: "Enter command to validate:"
-server_deleted: "✓ Deleted server '{id}'"
-server_enabled: "✓ Enabled server '{id}'"
-server_disabled: "✓ Disabled server '{id}'"
-servers_imported: "✓ Imported {count} servers"
-command_valid: "✓ Command '{cmd}' is valid"
-command_invalid: "✗ Command '{cmd}' not found"
-prompts_show_content: "👁️  View Full Content"
-prompts_delete: "🗑️  Delete Prompt"
-prompts_view_current: "📋 View Current Prompt"
-select_prompt_to_view: "Select prompt to view:"
-select_prompt_to_delete: "Select prompt to delete:"
-prompt_deleted: "✓ Deleted prompt '{id}'"
-no_active_prompt: "No active prompt."
-cannot_delete_active: "Cannot delete the active prompt."
-no_servers_to_delete: "No servers to delete."
-no_prompts_to_delete: "No prompts to delete."
-speedtest_endpoint: "🚀 Speedtest endpoint"
+
+settings:
+  title: "⚙️  Settings"
+
+change:
+  language: "🌐 Change Language"
+
+language:
+  changed: "✓ Language changed"
+
+press:
+  enter: "Press Enter to continue..."
+
+error:
+  prefix: "Error"
+
+header:
+  name: "Name"
+  category: "Category"
+  description: "Description"
+
+enter:
+  export_path: "Enter export file path:"
+  import_path: "Enter import file path:"
+  restore_path: "Enter backup file path:"
+  command_to_validate: "Enter command to validate:"
+
+common_config_snippet:
+  editor_prompt: "Edit common config snippet for {app} (JSON object; empty to clear):"
+  invalid_json: "Invalid JSON: {err}"
+  not_object: "Common config must be a JSON object (e.g. {\"env\":{...}})"
+  saved: "✓ Common config snippet saved"
+  cleared: "✓ Common config snippet cleared"
+  apply_now: "Apply to current provider now (write live config)?"
+  no_current_provider: "No current provider selected; common config snippet saved."
+  applied: "✓ Applied to live config (restart the client)"
+  apply_hint: "Tip: switch provider once to re-write the live config."
+
+exported:
+  to: "✓ Exported to '{path}'"
+
+imported:
+  from: "✓ Imported from '{path}'"
+
+backup:
+  created: "✓ Backup created, ID: {id}"
+
+restored:
+  from: "✓ Restored from '{path}'"
+
+file:
+  overwrite_confirm: "File '{path}' exists. Overwrite?"
+
+server:
+  deleted: "✓ Deleted server '{id}'"
+  enabled: "✓ Enabled server '{id}'"
+  disabled: "✓ Disabled server '{id}'"
+
+servers:
+  imported: "✓ Imported {count} servers"
+
+command:
+  valid: "✓ Command '{cmd}' is valid"
+  invalid: "✗ Command '{cmd}' not found"
+
+speedtest:
+  endpoint: "🚀 Speedtest endpoint"
+
 back: "← Back"
-language_display_name_english: "English"
-language_display_name_chinese: "中文"
+
+language_display_name:
+  english: "English"
+  chinese: "中文"
+
+update:
+  checking: "Checking for updates..."
+  current_version: "Current version: {version}"
+  latest_version: "Latest version: {version}"
+  detected_os: "Detected OS: {os}"
+  detected_arch: "Detected architecture: {arch}"
+  up_to_date: "You're already on the latest version."
+  downloading: "Downloading {asset}..."
+  installing: "Installing update..."
+  success: "Updated to {version}."
+  not_supported_windows: "Self-update is not supported on Windows yet."
+  no_asset: "No compatible release asset found for {os}/{arch}."
+  permission_denied: "Permission denied when updating {path}. Try running with elevated privileges (e.g., sudo)."
+  unsupported_platform: "Self-update is not supported on this platform: {os}."

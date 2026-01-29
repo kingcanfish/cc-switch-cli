@@ -21,3 +21,4 @@ vitest-report.json
 skill.md
 /target/
 /gen/schemas
+/openspec

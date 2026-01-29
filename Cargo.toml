@@ -1,6 +1,6 @@
 [package]
-name = "cc-switch"
-version = "0.0.1"
+name = "cc-switch-cli"
+version = "0.0.2"
 description = "All-in-One Assistant for Claude Code, Codex & Gemini CLI"
 authors = ["Jason Young", "kingcanfish"]
 license = "MIT"
@@ -52,9 +52,14 @@ toml = "0.8"
 toml_edit = "0.22"
 serde_yaml = "0.9"
 base64 = "0.22"
+flate2 = "1.0"
+tar = "0.4"
 
 # Network and async
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls",
+    "json",
+] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 futures = "0.3"
 
@@ -64,6 +69,7 @@ rquickjs = { version = "0.8", features = ["array-buffer", "classes"] }
 zip = "2.2"
 url = "2.5"
 edit = "0.1"
+semver = "1.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winreg = "0.52"
