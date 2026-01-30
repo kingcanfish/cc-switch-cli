@@ -162,6 +162,11 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [build, universal-macos]
     steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
