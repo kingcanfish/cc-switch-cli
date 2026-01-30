@@ -182,7 +182,15 @@ cc-switch-cli update                     # Update to the latest release
 
 ## 📥 Installation
 
-### Method 1: Download Pre-built Binaries (Recommended)
+### Method 1: Homebrew (macOS & Linux)
+
+```bash
+brew tap kingcanfish/tap
+brew install cc-switch-cli
+brew upgrade cc-switch-cli
+```
+
+### Method 2: Download Pre-built Binaries (Recommended)
 
 Download the latest release from [GitHub Releases](https://github.com/kingcanfish/cc-switch-cli/releases).
 
@@ -244,7 +252,7 @@ move cc-switch-cli.exe C:\Windows\System32\
 .\cc-switch-cli.exe
 ```
 
-### Method 2: Build from Source
+### Method 3: Build from Source
 
 **Prerequisites:**
 - Rust 1.85+ ([install via rustup](https://rustup.rs/))

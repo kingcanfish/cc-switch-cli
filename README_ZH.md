@@ -182,7 +182,15 @@ cc-switch-cli update                     # 更新到最新版本
 
 ## 📥 安装
 
-### 方法 1：下载预编译二进制（推荐）
+### 方法 1：Homebrew（macOS / Linux）
+
+```bash
+brew tap kingcanfish/tap
+brew install cc-switch-cli
+brew upgrade cc-switch-cli
+```
+
+### 方法 2：下载预编译二进制（推荐）
 
 从 [GitHub Releases](https://github.com/kingcanfish/cc-switch-cli/releases) 下载最新版本。
 
@@ -244,7 +252,7 @@ move cc-switch-cli.exe C:\Windows\System32\
 .\cc-switch-cli.exe
 ```
 
-### 方法 2：从源码构建
+### 方法 3：从源码构建
 
 **前提条件：**
 - Rust 1.85+（[通过 rustup 安装](https://rustup.rs/)）
