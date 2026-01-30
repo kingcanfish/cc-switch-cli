@@ -14,6 +14,9 @@ jobs:
   auto-tag:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-22.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      tag_exists: ${{ steps.tagcheck.outputs.exists }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -79,3 +82,13 @@ jobs:
           TAG="${{ steps.version.outputs.tag }}"
           git tag "$TAG"
           git push origin "$TAG"
+
+  release:
+    needs: auto-tag
+    if: needs.auto-tag.outputs.tag_exists == 'false'
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.auto-tag.outputs.tag }}
+    secrets: inherit
+    permissions:
+      contents: write

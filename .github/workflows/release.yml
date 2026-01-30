@@ -4,13 +4,27 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (vX.Y.Z)"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: true
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   build:
@@ -63,6 +77,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -158,7 +174,7 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p release-assets
-          VERSION="${GITHUB_REF_NAME}"
+          VERSION="${RELEASE_TAG}"
 
           # macOS Universal
           if [ -f "artifacts/cc-switch-cli-darwin-universal/cc-switch-cli" ]; then
@@ -215,12 +231,12 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: CC Switch CLI ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: CC Switch CLI ${{ env.RELEASE_TAG }}
           draft: false
           prerelease: false
           body: |
-            ## CC Switch CLI ${{ github.ref_name }}
+            ## CC Switch CLI ${{ env.RELEASE_TAG }}
 
             All-in-One Assistant for Claude Code, Codex & Gemini CLI
 
@@ -228,12 +244,12 @@ jobs:
 
             | 平台 Platform | 文件 File |
             |---------------|-----------|
-            | **macOS** (Universal) | `cc-switch-cli-${{ github.ref_name }}-darwin-universal.tar.gz` |
-            | **Windows** (x64) | `cc-switch-cli-${{ github.ref_name }}-windows-x64.zip` |
-            | **Linux** (x64 musl) | `cc-switch-cli-${{ github.ref_name }}-linux-x64-musl.tar.gz` |
-            | **Linux** (x64 glibc) | `cc-switch-cli-${{ github.ref_name }}-linux-x64.tar.gz` |
-            | **Linux** (ARM64 musl) | `cc-switch-cli-${{ github.ref_name }}-linux-arm64-musl.tar.gz` |
-            | **Linux** (ARM64 glibc) | `cc-switch-cli-${{ github.ref_name }}-linux-arm64.tar.gz` |
+            | **macOS** (Universal) | `cc-switch-cli-${{ env.RELEASE_TAG }}-darwin-universal.tar.gz` |
+            | **Windows** (x64) | `cc-switch-cli-${{ env.RELEASE_TAG }}-windows-x64.zip` |
+            | **Linux** (x64 musl) | `cc-switch-cli-${{ env.RELEASE_TAG }}-linux-x64-musl.tar.gz` |
+            | **Linux** (x64 glibc) | `cc-switch-cli-${{ env.RELEASE_TAG }}-linux-x64.tar.gz` |
+            | **Linux** (ARM64 musl) | `cc-switch-cli-${{ env.RELEASE_TAG }}-linux-arm64-musl.tar.gz` |
+            | **Linux** (ARM64 glibc) | `cc-switch-cli-${{ env.RELEASE_TAG }}-linux-arm64.tar.gz` |
 
             ### 🚀 快速安装
 
