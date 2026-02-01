@@ -5,6 +5,9 @@ use crate::services::self_update::{
     extract_version_from_output, select_asset, Os, Platform, SelfUpdateService, Version,
 };
 use clap::CommandFactory;
+use std::env;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 pub fn execute() -> Result<(), AppError> {
     let platform = Platform::detect();
@@ -21,6 +24,11 @@ pub fn execute() -> Result<(), AppError> {
                 &[("os", &os)],
             )));
         }
+    }
+
+    if is_homebrew_install() {
+        println!("{}", warning(texts::text("update_homebrew_hint")));
+        return Ok(());
     }
 
     let version_output = crate::cli::Cli::command().render_version();
@@ -118,4 +126,45 @@ pub fn execute() -> Result<(), AppError> {
         );
         Ok(())
     })
+}
+
+fn is_homebrew_install() -> bool {
+    let current = match env::current_exe() {
+        Ok(path) => path,
+        Err(_) => return false,
+    };
+
+    let mut candidates = vec![current.clone()];
+    if let Ok(resolved) = fs::canonicalize(&current) {
+        if resolved != current {
+            candidates.push(resolved);
+        }
+    }
+
+    candidates
+        .into_iter()
+        .any(|path| is_homebrew_cellar_path(&path))
+}
+
+fn is_homebrew_cellar_path(path: &Path) -> bool {
+    for prefix in homebrew_prefixes() {
+        let cellar = prefix.join("Cellar").join("cc-switch-cli");
+        if path.starts_with(&cellar) {
+            return true;
+        }
+    }
+    false
+}
+
+fn homebrew_prefixes() -> Vec<PathBuf> {
+    let mut prefixes = Vec::new();
+    if let Ok(prefix) = env::var("HOMEBREW_PREFIX") {
+        if !prefix.is_empty() {
+            prefixes.push(PathBuf::from(prefix));
+        }
+    }
+    prefixes.push(PathBuf::from("/opt/homebrew"));
+    prefixes.push(PathBuf::from("/usr/local"));
+    prefixes.push(PathBuf::from("/home/linuxbrew/.linuxbrew"));
+    prefixes
 }

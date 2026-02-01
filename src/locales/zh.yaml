@@ -17,6 +17,9 @@ confirm:
   reset: "确定要重置配置吗？这将删除所有自定义设置。"
   restore: "确定要从备份恢复配置吗？"
 
+update:
+  homebrew_hint: "检测到通过 Homebrew 安装，请使用 Homebrew 更新：brew upgrade cc-switch-cli。"
+
 select:
   to_delete_entity: "选择要删除的{entity_type}："
   provider_add_mode: "请选择供应商类型："

@@ -17,6 +17,9 @@ confirm:
   reset: "Are you sure you want to reset? This will delete all custom settings."
   restore: "Are you sure you want to restore from backup?"
 
+update:
+  homebrew_hint: "Detected Homebrew installation. Please update via Homebrew: brew upgrade cc-switch-cli."
+
 select:
   to_delete_entity: "Select {entity_type} to delete:"
   provider_add_mode: "Select provider type:"
