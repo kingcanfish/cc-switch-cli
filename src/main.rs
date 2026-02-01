@@ -23,19 +23,29 @@ fn main() {
 }
 
 fn run(cli: Cli) -> Result<(), AppError> {
+    let resolved_app = cc_switch_lib::cli::resolve_app(cli.app);
+
     match cli.command {
         // Default to interactive mode if no command is provided
-        None | Some(Commands::Interactive) => cc_switch_lib::cli::interactive::run(cli.app),
-        Some(Commands::Provider(cmd)) => {
-            cc_switch_lib::cli::commands::provider::execute(cmd, cli.app)
+        None | Some(Commands::Interactive) => {
+            cc_switch_lib::cli::interactive::run(Some(resolved_app))
         }
-        Some(Commands::Mcp(cmd)) => cc_switch_lib::cli::commands::mcp::execute(cmd, cli.app),
+        Some(Commands::Provider(cmd)) => {
+            cc_switch_lib::cli::commands::provider::execute(cmd, Some(resolved_app))
+        }
+        Some(Commands::Mcp(cmd)) => {
+            cc_switch_lib::cli::commands::mcp::execute(cmd, Some(resolved_app))
+        }
         Some(Commands::Prompts(cmd)) => {
-            cc_switch_lib::cli::commands::prompts::execute(cmd, cli.app)
+            cc_switch_lib::cli::commands::prompts::execute(cmd, Some(resolved_app))
         }
         Some(Commands::Skills(cmd)) => cc_switch_lib::cli::commands::skills::execute(cmd),
-        Some(Commands::Config(cmd)) => cc_switch_lib::cli::commands::config::execute(cmd, cli.app),
-        Some(Commands::Env(cmd)) => cc_switch_lib::cli::commands::env::execute(cmd, cli.app),
+        Some(Commands::Config(cmd)) => {
+            cc_switch_lib::cli::commands::config::execute(cmd, Some(resolved_app))
+        }
+        Some(Commands::Env(cmd)) => {
+            cc_switch_lib::cli::commands::env::execute(cmd, Some(resolved_app))
+        }
         Some(Commands::Update) => cc_switch_lib::cli::commands::update::execute(),
         Some(Commands::Completions { shell }) => {
             cc_switch_lib::cli::generate_completions(shell);

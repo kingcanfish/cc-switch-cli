@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::{OnceLock, RwLock};
 
+use crate::app_config::AppType;
 use crate::error::AppError;
 
 /// 自定义端点配置
@@ -45,6 +47,8 @@ pub struct AppSettings {
     pub opencode_config_dir: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_app: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub security: Option<SecuritySettings>,
     /// Claude 自定义端点列表
@@ -119,6 +123,13 @@ impl AppSettings {
             .as_ref()
             .map(|s| s.trim())
             .filter(|s| matches!(*s, "en" | "zh"))
+            .map(|s| s.to_string());
+
+        self.last_app = self
+            .last_app
+            .as_ref()
+            .map(|s| s.trim().to_lowercase())
+            .filter(|s| matches!(s.as_str(), "claude" | "codex" | "gemini"))
             .map(|s| s.to_string());
     }
 
@@ -197,6 +208,26 @@ pub fn ensure_security_auth_selected_type(selected_type: &str) -> Result<(), App
     security.auth = Some(auth);
     settings.security = Some(security);
 
+    update_settings(settings)
+}
+
+pub fn default_app() -> AppType {
+    get_settings()
+        .last_app
+        .as_deref()
+        .and_then(|value| AppType::from_str(value).ok())
+        .unwrap_or(AppType::Claude)
+}
+
+pub fn set_last_app(app: &AppType) -> Result<(), AppError> {
+    let mut settings = get_settings();
+    let next = app.as_str().to_string();
+
+    if settings.last_app.as_deref() == Some(next.as_str()) {
+        return Ok(());
+    }
+
+    settings.last_app = Some(next);
     update_settings(settings)
 }
 
