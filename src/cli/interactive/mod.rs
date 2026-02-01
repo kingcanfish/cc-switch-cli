@@ -13,6 +13,7 @@ use crate::cli::i18n::texts;
 use crate::cli::ui::{error, highlight, info, set_tui_theme_app, success};
 use crate::error::AppError;
 use crate::services::{McpService, PromptService, ProviderService};
+use crate::settings as app_settings;
 
 use utils::{
     app_switch_direction_from_key, clear_screen, cycle_app_type, pause, prompt_select,
@@ -23,8 +24,17 @@ pub fn run(app: Option<AppType>) -> Result<(), AppError> {
     // Disable bracketed paste mode to work around inquire dropping paste events
     crate::cli::terminal::disable_bracketed_paste_mode_best_effort();
 
-    let mut app_type = app.unwrap_or(AppType::Claude);
+    let mut app_type = app
+        .as_ref()
+        .cloned()
+        .unwrap_or_else(app_settings::default_app);
     set_tui_theme_app(Some(app_type.clone()));
+
+    if let Some(app_type) = app.as_ref() {
+        if let Err(err) = app_settings::set_last_app(app_type) {
+            log::warn!("Failed to persist last app: {}", err);
+        }
+    }
 
     loop {
         match show_main_menu(&mut app_type)? {
@@ -67,6 +77,9 @@ pub fn run(app: Option<AppType>) -> Result<(), AppError> {
             MainMenuChoice::SwitchApp => {
                 if let Ok(new_app) = select_app() {
                     app_type = new_app;
+                    if let Err(err) = app_settings::set_last_app(&app_type) {
+                        log::warn!("Failed to persist last app: {}", err);
+                    }
                 }
             }
             MainMenuChoice::Settings => {
@@ -215,6 +228,9 @@ fn show_main_menu(app_type: &mut AppType) -> Result<MainMenuChoice, AppError> {
         // Handle app switching (left/right arrows)
         if let Some(direction) = app_switch_direction_from_key(&key) {
             *app_type = cycle_app_type(app_type, direction);
+            if let Err(err) = app_settings::set_last_app(app_type) {
+                log::warn!("Failed to persist last app: {}", err);
+            }
             continue;
         }
 

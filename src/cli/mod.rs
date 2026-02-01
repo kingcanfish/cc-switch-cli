@@ -8,6 +8,7 @@ pub mod terminal;
 pub mod ui;
 
 use crate::app_config::AppType;
+use crate::settings;
 
 #[derive(Parser)]
 #[command(
@@ -72,6 +73,18 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: Shell,
     },
+}
+
+pub fn resolve_app(app: Option<AppType>) -> AppType {
+    match app {
+        Some(app_type) => {
+            if let Err(err) = settings::set_last_app(&app_type) {
+                log::warn!("Failed to persist last app: {}", err);
+            }
+            app_type
+        }
+        None => settings::default_app(),
+    }
 }
 
 /// Generate shell completions
