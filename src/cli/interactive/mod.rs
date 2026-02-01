@@ -3,6 +3,7 @@ mod mcp;
 mod prompts;
 mod provider;
 mod settings;
+mod skills;
 mod utils;
 
 use std::io::IsTerminal;
@@ -41,6 +42,12 @@ pub fn run(app: Option<AppType>) -> Result<(), AppError> {
             }
             MainMenuChoice::ManagePrompts => {
                 if let Err(e) = prompts::manage_prompts_menu(&app_type) {
+                    println!("\n{}", error(&format!("{}: {}", texts::error_prefix(), e)));
+                    pause();
+                }
+            }
+            MainMenuChoice::ManageSkills => {
+                if let Err(e) = skills::manage_skills_menu() {
                     println!("\n{}", error(&format!("{}: {}", texts::error_prefix(), e)));
                     pause();
                 }
@@ -85,6 +92,7 @@ enum MainMenuChoice {
     ManageProviders,
     ManageMCP,
     ManagePrompts,
+    ManageSkills,
     ManageConfig,
     ViewCurrentConfig,
     SwitchApp,
@@ -98,6 +106,7 @@ impl std::fmt::Display for MainMenuChoice {
             Self::ManageProviders => write!(f, "{}", texts::menu_manage_providers()),
             Self::ManageMCP => write!(f, "{}", texts::menu_manage_mcp()),
             Self::ManagePrompts => write!(f, "{}", texts::menu_manage_prompts()),
+            Self::ManageSkills => write!(f, "{}", texts::menu_manage_skills()),
             Self::ManageConfig => write!(f, "{}", texts::menu_manage_config()),
             Self::ViewCurrentConfig => write!(f, "{}", texts::menu_view_config()),
             Self::SwitchApp => write!(f, "{}", texts::menu_switch_app()),
@@ -126,6 +135,7 @@ fn show_main_menu(app_type: &mut AppType) -> Result<MainMenuChoice, AppError> {
         MainMenuChoice::ManageProviders,
         MainMenuChoice::ManageMCP,
         MainMenuChoice::ManagePrompts,
+        MainMenuChoice::ManageSkills,
         MainMenuChoice::ManageConfig,
         MainMenuChoice::ViewCurrentConfig,
         MainMenuChoice::SwitchApp,
@@ -265,7 +275,12 @@ fn show_main_menu(app_type: &mut AppType) -> Result<MainMenuChoice, AppError> {
 }
 
 fn select_app() -> Result<AppType, AppError> {
-    let apps = vec![AppType::Claude, AppType::Codex, AppType::Gemini];
+    let apps = vec![
+        AppType::Claude,
+        AppType::Codex,
+        AppType::Gemini,
+        AppType::OpenCode,
+    ];
 
     let Some(app) = prompt_select(texts::select_application(), apps)? else {
         return Err(AppError::Message("Selection cancelled".to_string()));

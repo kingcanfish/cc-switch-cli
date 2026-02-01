@@ -54,6 +54,7 @@ pub fn prompt_settings_config_for_add(
         (AppType::Codex, ProviderAddMode::Official) => prompt_codex_official_config(),
         (AppType::Codex, ProviderAddMode::ThirdParty) => prompt_codex_config(None),
         (AppType::Gemini, _) => prompt_gemini_config(None),
+        (AppType::OpenCode, _) => prompt_opencode_config(None),
     }
 }
 
@@ -102,8 +103,6 @@ pub fn generate_provider_id(name: &str, existing_ids: &[String]) -> String {
         .map(|c| {
             if c.is_alphanumeric() || c == '-' || c == '_' {
                 c
-            } else if c.is_whitespace() {
-                '-'
             } else {
                 '-'
             }
@@ -190,6 +189,7 @@ pub fn prompt_settings_config(
         AppType::Claude => prompt_claude_config(current),
         AppType::Codex => prompt_codex_config(current),
         AppType::Gemini => prompt_gemini_config(current),
+        AppType::OpenCode => prompt_opencode_config(current),
     }
 }
 
@@ -610,6 +610,87 @@ fn prompt_gemini_config(current: Option<&Value>) -> Result<Value, AppError> {
     }
 }
 
+fn prompt_opencode_config(current: Option<&Value>) -> Result<Value, AppError> {
+    println!("\n{}", texts::config_opencode_header().bright_cyan().bold());
+
+    let current_npm = current
+        .and_then(|v| v.get("npm"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("@ai-sdk/openai-compatible");
+    let npm = Text::new(texts::opencode_npm_label())
+        .with_initial_value(current_npm)
+        .with_help_message(texts::opencode_npm_help())
+        .prompt()
+        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let npm = npm.trim().to_string();
+    if npm.is_empty() {
+        return Err(AppError::InvalidInput(
+            texts::opencode_npm_required_error().to_string(),
+        ));
+    }
+
+    let current_base_url = current
+        .and_then(|v| v.get("options"))
+        .and_then(|v| v.get("baseURL"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let base_url = Text::new(texts::opencode_base_url_label())
+        .with_initial_value(current_base_url)
+        .with_help_message(texts::opencode_base_url_help())
+        .prompt()
+        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+
+    let current_api_key = current
+        .and_then(|v| v.get("options"))
+        .and_then(|v| v.get("apiKey"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let api_key = Text::new(texts::opencode_api_key_label())
+        .with_initial_value(current_api_key)
+        .with_help_message(texts::opencode_api_key_help())
+        .prompt()
+        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+
+    let current_models = current
+        .and_then(|v| v.get("models"))
+        .and_then(|v| v.as_object())
+        .map(|m| m.keys().cloned().collect::<Vec<_>>().join(", "))
+        .unwrap_or_default();
+    let models_input = Text::new(texts::opencode_models_label())
+        .with_initial_value(&current_models)
+        .with_help_message(texts::opencode_models_help())
+        .prompt()
+        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+
+    let mut options = serde_json::Map::new();
+    if !base_url.trim().is_empty() {
+        options.insert("baseURL".to_string(), json!(base_url.trim()));
+    }
+    if !api_key.trim().is_empty() {
+        options.insert("apiKey".to_string(), json!(api_key.trim()));
+    }
+
+    let mut models = serde_json::Map::new();
+    for id in models_input
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
+        models.insert(id.to_string(), json!({ "name": id }));
+    }
+
+    let mut obj = serde_json::Map::new();
+    obj.insert("npm".to_string(), json!(npm));
+    if !options.is_empty() {
+        obj.insert("options".to_string(), Value::Object(options));
+    }
+    if !models.is_empty() {
+        obj.insert("models".to_string(), Value::Object(models));
+    }
+
+    Ok(Value::Object(obj))
+}
+
 /// 收集可选字段
 pub fn prompt_optional_fields(current: Option<&Provider>) -> Result<OptionalFields, AppError> {
     println!("\n{}", texts::optional_fields_config().bright_cyan().bold());
@@ -738,6 +819,36 @@ pub fn display_provider_summary(provider: &Provider, app_type: &AppType) {
                     .and_then(|v| v.as_str())
                 {
                     println!("  {}: {}", texts::base_url_display_label(), base_url);
+                }
+            }
+        }
+        AppType::OpenCode => {
+            if let Some(npm) = provider.settings_config.get("npm").and_then(|v| v.as_str()) {
+                println!("  npm: {}", npm);
+            }
+            if let Some(options) = provider.settings_config.get("options") {
+                if let Some(api_key) = options.get("apiKey").and_then(|v| v.as_str()) {
+                    println!(
+                        "  {}: {}",
+                        texts::api_key_display_label(),
+                        mask_api_key(api_key)
+                    );
+                }
+                if let Some(base_url) = options.get("baseURL").and_then(|v| v.as_str()) {
+                    println!("  {}: {}", texts::base_url_display_label(), base_url);
+                }
+            }
+            if let Some(models) = provider
+                .settings_config
+                .get("models")
+                .and_then(|v| v.as_object())
+            {
+                if !models.is_empty() {
+                    println!(
+                        "  {}: {}",
+                        texts::opencode_models_count_label(),
+                        models.len()
+                    );
                 }
             }
         }

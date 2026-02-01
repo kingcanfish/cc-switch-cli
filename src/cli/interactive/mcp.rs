@@ -25,7 +25,13 @@ pub fn manage_mcp_menu(_app_type: &AppType) -> Result<(), AppError> {
             println!("{}", info(texts::no_mcp_servers()));
         } else {
             let mut table = create_table();
-            table.set_header(vec![texts::header_name(), "Claude", "Codex", "Gemini"]);
+            table.set_header(vec![
+                texts::header_name(),
+                "Claude",
+                "Codex",
+                "Gemini",
+                "OpenCode",
+            ]);
 
             let mut server_list: Vec<_> = servers.iter().collect();
             server_list.sort_by_key(|(id, _)| *id);
@@ -36,6 +42,7 @@ pub fn manage_mcp_menu(_app_type: &AppType) -> Result<(), AppError> {
                     if server.apps.claude { "✓" } else { " " }.to_string(),
                     if server.apps.codex { "✓" } else { " " }.to_string(),
                     if server.apps.gemini { "✓" } else { " " }.to_string(),
+                    if server.apps.opencode { "✓" } else { " " }.to_string(),
                 ]);
             }
 
@@ -103,7 +110,7 @@ fn mcp_enable_server_interactive(state: &AppState) -> Result<(), AppError> {
         .and_then(|s| s.strip_suffix(')'))
         .ok_or_else(|| AppError::Message("Invalid selection".to_string()))?;
 
-    let app_choices = vec!["Claude", "Codex", "Gemini"];
+    let app_choices = vec!["Claude", "Codex", "Gemini", "OpenCode"];
     let Some(selected_apps) = prompt_multiselect_with_help(
         texts::select_apps_to_enable(),
         app_choices,
@@ -119,6 +126,7 @@ fn mcp_enable_server_interactive(state: &AppState) -> Result<(), AppError> {
             "Claude" => Some(AppType::Claude),
             "Codex" => Some(AppType::Codex),
             "Gemini" => Some(AppType::Gemini),
+            "OpenCode" => Some(AppType::OpenCode),
             _ => None,
         })
         .collect();
@@ -156,7 +164,7 @@ fn mcp_disable_server_interactive(state: &AppState) -> Result<(), AppError> {
         .and_then(|s| s.strip_suffix(')'))
         .ok_or_else(|| AppError::Message("Invalid selection".to_string()))?;
 
-    let app_choices = vec!["Claude", "Codex", "Gemini"];
+    let app_choices = vec!["Claude", "Codex", "Gemini", "OpenCode"];
     let Some(selected_apps) = prompt_multiselect_with_help(
         texts::select_apps_to_disable(),
         app_choices,
@@ -172,6 +180,7 @@ fn mcp_disable_server_interactive(state: &AppState) -> Result<(), AppError> {
             "Claude" => Some(AppType::Claude),
             "Codex" => Some(AppType::Codex),
             "Gemini" => Some(AppType::Gemini),
+            "OpenCode" => Some(AppType::OpenCode),
             _ => None,
         })
         .collect();
@@ -232,6 +241,7 @@ fn mcp_import_servers_interactive(state: &AppState) -> Result<(), AppError> {
     total += McpService::import_from_app(state, AppType::Claude)?;
     total += McpService::import_from_app(state, AppType::Codex)?;
     total += McpService::import_from_app(state, AppType::Gemini)?;
+    total += McpService::import_from_app(state, AppType::OpenCode)?;
 
     println!("\n{}", success(&texts::servers_imported(total)));
     pause();

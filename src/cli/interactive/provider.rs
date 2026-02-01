@@ -84,6 +84,11 @@ fn view_provider_detail(
     app_type: &AppType,
     current_id: &str,
 ) -> Result<(), AppError> {
+    if matches!(app_type, AppType::OpenCode) && current_id.trim().is_empty() {
+        println!("\n{}", info(texts::opencode_no_current_provider()));
+        pause();
+        return Ok(());
+    }
     loop {
         clear_screen();
         let providers = ProviderService::list(state, app_type.clone())?;
@@ -261,6 +266,11 @@ pub fn extract_api_url(settings_config: &serde_json::Value, app_type: &AppType) 
             .or_else(|| settings_config.get("env")?.get("BASE_URL"))?
             .as_str()
             .map(|s| s.to_string()),
+        AppType::OpenCode => settings_config
+            .get("options")?
+            .get("baseURL")?
+            .as_str()
+            .map(|s| s.to_string()),
     }
 }
 
@@ -270,6 +280,11 @@ fn switch_provider_interactive(
     providers: &std::collections::HashMap<String, crate::provider::Provider>,
     current_id: &str,
 ) -> Result<(), AppError> {
+    if matches!(app_type, AppType::OpenCode) {
+        println!("\n{}", info(texts::opencode_switch_not_supported()));
+        pause();
+        return Ok(());
+    }
     if providers.len() <= 1 {
         println!("\n{}", info(texts::only_one_provider()));
         pause();
@@ -532,6 +547,11 @@ fn edit_provider_with_json_editor(
 
             ("settings_config", json_str, false)
         }
+        AppType::OpenCode => {
+            let json_str = serde_json::to_string_pretty(&original.settings_config)
+                .map_err(|e| AppError::JsonSerialize { source: e })?;
+            ("settings_config", json_str, false)
+        }
     };
 
     // 2. Edit loop with validation
@@ -616,6 +636,10 @@ fn edit_provider_with_json_editor(
                 // Replace entire settings_config
                 updated_provider.settings_config = validated_value;
             }
+            AppType::OpenCode => {
+                // Replace entire settings_config
+                updated_provider.settings_config = validated_value;
+            }
         }
 
         // 5. Display summary
@@ -644,9 +668,13 @@ fn edit_provider_with_json_editor(
 
         // 8. Immediately sync to live config files
         println!("\n{}", info("Syncing to live config files..."));
-        ProviderService::switch(&state, app_type.clone(), id)?;
-
-        println!("{}", success("✓ Changes synced to live config files"));
+        if matches!(app_type, AppType::OpenCode) {
+            ProviderService::sync_opencode_to_live(&state)?;
+            println!("{}", success("✓ Changes synced to OpenCode live config"));
+        } else {
+            ProviderService::switch(&state, app_type.clone(), id)?;
+            println!("{}", success("✓ Changes synced to live config files"));
+        }
         println!("{}", info(texts::restart_note()));
 
         break;

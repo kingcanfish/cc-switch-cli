@@ -1,6 +1,7 @@
 mod claude;
 mod codex;
 mod gemini;
+mod opencode;
 
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -20,6 +21,7 @@ fn backend_for(app: &AppType) -> &'static dyn McpBackend {
         AppType::Claude => &claude::CLAUDE_BACKEND,
         AppType::Codex => &codex::CODEX_BACKEND,
         AppType::Gemini => &gemini::GEMINI_BACKEND,
+        AppType::OpenCode => &opencode::OPENCODE_BACKEND,
     }
 }
 

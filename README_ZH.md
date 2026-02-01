@@ -7,9 +7,9 @@
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Claude Code、Codex 与 Gemini CLI 的命令行管理工具**
+**Claude Code、Codex、Gemini 与 OpenCode CLI 的命令行管理工具**
 
-统一管理 Claude Code、Codex 与 Gemini CLI 的供应商配置、MCP 服务器、Skills 扩展和系统提示词。
+统一管理 Claude Code、Codex、Gemini 与 OpenCode CLI 的供应商配置、MCP 服务器、Skills 扩展和系统提示词。
 
 [English](README.md) | [中文](README_ZH.md)
 
@@ -44,8 +44,9 @@ cc-switch-cli mcp sync                   # 同步 MCP 服务器
 cc-switch-cli --app claude provider list    # 管理 Claude 供应商
 cc-switch-cli --app codex mcp sync          # 同步 Codex MCP 服务器
 cc-switch-cli --app gemini prompts list     # 列出 Gemini 提示词
+cc-switch-cli --app opencode provider list  # 管理 OpenCode 供应商
 
-# 支持的应用：`claude`（默认）、`codex`、`gemini`
+# 支持的应用：`claude`（默认）、`codex`、`gemini`、`opencode`
 ```
 
 完整命令列表请参考下方「功能特性」章节。
@@ -56,7 +57,7 @@ cc-switch-cli --app gemini prompts list     # 列出 Gemini 提示词
 
 ### 🔌 供应商管理
 
-管理 **Claude Code**、**Codex** 和 **Gemini** 的 API 配置。
+管理 **Claude Code**、**Codex**、**Gemini** 和 **OpenCode** 的 API 配置。
 
 **功能：** 一键切换、多端点支持、API 密钥管理、速度测试、供应商复制。
 
@@ -71,9 +72,11 @@ cc-switch-cli provider delete <id>       # 删除供应商
 cc-switch-cli provider speedtest <id>    # 测试 API 延迟
 ```
 
+**OpenCode 说明：** OpenCode 为累加式供应商（无“当前”切换），使用添加/编辑/删除进行管理。
+
 ### 🛠️ MCP 服务器管理
 
-跨 Claude/Codex/Gemini 管理模型上下文协议服务器。
+跨 Claude/Codex/Gemini/OpenCode 管理模型上下文协议服务器。
 
 **功能：** 统一管理、多应用支持、三种传输类型（stdio/http/sse）、自动同步、智能 TOML 解析器。
 
@@ -93,7 +96,7 @@ cc-switch-cli mcp import --app claude    # 从实时配置导入
 
 管理 AI 编码助手的系统提示词预设。
 
-**跨应用支持：** Claude (`CLAUDE.md`)、Codex (`AGENTS.md`)、Gemini (`GEMINI.md`)。
+**跨应用支持：** Claude (`CLAUDE.md`)、Codex (`AGENTS.md`)、Gemini (`GEMINI.md`)、OpenCode (`AGENTS.md`)。
 
 ```bash
 cc-switch-cli prompts list               # 列出提示词预设
@@ -108,9 +111,7 @@ cc-switch-cli prompts delete <id>        # 删除提示词
 
 ### 🎯 Skills 管理
 
-⚠️ **注意：v0.0.2 版本暂未实现** - 此功能计划在未来版本中推出。
-
-通过社区技能扩展 Claude Code/Codex/Gemini 的能力。
+通过社区技能扩展 Claude Code/Codex/Gemini/OpenCode 的能力。
 
 **功能：** 搜索技能市场、安装/卸载、仓库管理、技能信息查看。
 
@@ -297,6 +298,7 @@ copy target\release\cc-switch-cli.exe C:\Windows\System32\
 - Claude: `~/.claude/settings.json`, `~/.claude.json` (MCP), `~/.claude/CLAUDE.md` (提示词)
 - Codex: `~/.codex/auth.json`, `~/.codex/config.toml` (MCP), `~/.codex/AGENTS.md` (提示词)
 - Gemini: `~/.gemini/.env`, `~/.gemini/settings.json` (MCP), `~/.gemini/GEMINI.md` (提示词)
+- OpenCode: `~/.config/opencode/opencode.json`（供应商 & MCP）, `~/.config/opencode/AGENTS.md`（提示词）
 
 ---
 
@@ -339,10 +341,11 @@ copy target\release\cc-switch-cli.exe C:\Windows\System32\
 
 <br>
 
-CC-Switch 目前支持三个 AI 编程助手：
+CC-Switch 目前支持四个 AI 编程助手：
 - **Claude Code** (`--app claude`，默认)
 - **Codex** (`--app codex`)
 - **Gemini** (`--app gemini`)
+- **OpenCode** (`--app opencode`)
 
 使用全局 `--app` 参数指定要管理的应用：
 ```bash

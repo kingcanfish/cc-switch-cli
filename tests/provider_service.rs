@@ -70,8 +70,10 @@ command = "say"
         );
     }
 
-    let mut apps = McpApps::default();
-    apps.codex = true;
+    let apps = McpApps {
+        codex: true,
+        ..Default::default()
+    };
     let server = McpServer {
         id: "echo-server".to_string(),
         name: "echo-server".to_string(),

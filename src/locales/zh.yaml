@@ -67,13 +67,51 @@ main_menu:
 
 menu:
   manage_providers: "🔌 管理供应商"
-  manage_mcp: "🛠️  管理 MCP 服务器"
+  manage_mcp: "🛠️ 管理 MCP 服务器"
   manage_prompts: "💬 管理提示词"
-  manage_config: "⚙️  配置文件管理"
-  view_config: "👁️  查看当前配置"
+  manage_skills: "🧰 管理技能"
+  manage_config: "⚙️ 配置文件管理"
+  view_config: "👁️ 查看当前配置"
   switch_app: "🔄 切换应用"
-  settings: "⚙️  设置"
+  settings: "⚙️ 设置"
   exit: "🚪 退出"
+
+skills:
+  management: "🧰 技能管理"
+  list: "📋 查看已安装技能"
+  search: "🔍 搜索技能"
+  install: "➕ 安装技能"
+  uninstall: "🗑️ 卸载技能"
+  info: "ℹ️ 查看技能信息"
+  repos: "📚 管理技能仓库"
+  installed_header: "已安装技能"
+  available_header: "可用技能"
+  none_installed: "暂无已安装技能。"
+  none_found: "未找到技能。"
+  search_prompt: "输入搜索关键字（留空列出全部）："
+  select_prompt: "选择一个技能："
+  name_prompt: "输入技能名称或 URL："
+  not_found: "未找到技能：{name}"
+  not_installed: "未找到已安装技能：{name}"
+  install_missing_repo: "技能为本地或缺少仓库信息，无法安装。"
+  installed: "已安装技能：{name}"
+  uninstalled: "已卸载技能：{name}"
+  info_header: "技能信息"
+  label_name: "名称"
+  label_directory: "目录"
+  label_description: "描述"
+  label_readme: "Readme"
+  label_installed: "已安装"
+  label_apps: "应用"
+  repos_header: "技能仓库"
+  repos_list: "📋 查看仓库"
+  repos_add: "➕ 添加仓库"
+  repos_remove: "🗑️ 移除仓库"
+  repos_empty: "暂无配置的仓库。"
+  repo_prompt: "输入仓库 URL："
+  repo_invalid_url: "仓库 URL 无效"
+  repo_added: "仓库已添加。"
+  repo_removed: "仓库已移除。"
 
 provider:
   management: "🔌 供应商管理"
@@ -102,9 +140,9 @@ add:
   third_party_provider: "添加第三方供应商"
 
 delete:
-  provider: "🗑️  删除供应商"
+  provider: "🗑️ 删除供应商"
 
-back_to_main: "⬅️  返回主菜单"
+back_to_main: "⬅️ 返回主菜单"
 
 choose:
   action: "选择操作："
@@ -118,7 +156,7 @@ current:
   config_header: "当前配置："
   provider_synced_warning: "⚠ 此供应商当前已激活，修改已同步到 live 配置"
   config_label: "当前配置："
-  configuration: "👁️  当前配置"
+  configuration: "👁️ 当前配置"
   language_label: "当前语言"
 
 only:
@@ -178,18 +216,18 @@ config:
   gemini_header: "配置 Gemini 供应商："
   toml_lines: "Config (TOML): {count} 行"
   info_header: "配置信息"
-  management: "⚙️  配置文件管理"
+  management: "⚙️ 配置文件管理"
   export: "📤 导出配置"
   import: "📥 导入配置"
   backup: "💾 备份配置"
-  restore: "♻️  恢复配置"
-  validate: "✓ 验证配置"
+  restore: "♻️ 恢复配置"
+  validate: "☑️ 验证配置"
   common_snippet: "🧩 通用配置片段"
   reset: "🔄 重置配置"
-  show_full: "👁️  查看完整配置"
+  show_full: "👁️ 查看完整配置"
   show_path: "📍 显示配置路径"
-  valid: "✓ 配置文件有效"
-  reset_done: "✓ 配置已重置为默认值"
+  valid: "☑️ 配置文件有效"
+  reset_done: "☑️ 配置已重置为默认值"
 
 api:
   key_label: "API Key："
@@ -232,7 +270,7 @@ codex:
   wire_api_label: "API 格式："
   wire_api_help: "chat = Chat Completions API (大多数第三方), responses = OpenAI Responses API"
   env_reminder: "⚠ 请确保已设置环境变量 {env_key} 并包含您的 API 密钥\n  例如: export {env_key}=\"your-api-key\""
-  openai_auth_info: "✓ OpenAI 认证模式：Codex 将使用 auth.json/系统凭据存储，无需设置 OPENAI_API_KEY 环境变量"
+  openai_auth_info: " OpenAI 认证模式：Codex 将使用 auth.json/系统凭据存储，无需设置 OPENAI_API_KEY 环境变量"
   dual_write_info: "✓ 双写模式已启用（兼容所有 Codex 版本）\n• 旧版本 Codex: 将使用 auth.json 中的 API Key\n• Codex 0.64+: 可使用环境变量 {env_key} (更安全)\n例如: export {env_key}=\"your-api-key\""
 
 use:
@@ -347,7 +385,7 @@ location:
 edit:
   provider_menu: "➕ 编辑供应商"
   mode_interactive: "📝 交互式编辑 (分步提示)"
-  mode_json_editor: "✏️  JSON 编辑 (使用外部编辑器)"
+  mode_json_editor: "✏️ JSON 编辑 (使用外部编辑器)"
   fields_instruction: "逐个编辑字段（直接回车保留当前值）：\n"
 
 cancel: "❌ 取消"
@@ -371,9 +409,9 @@ updated:
   config_header: "修改后配置："
 
 mcp:
-  management: "🛠️  MCP 服务器管理"
+  management: "🛠️ MCP 服务器管理"
   servers_label: "MCP 服务器："
-  delete_server: "🗑️  删除服务器"
+  delete_server: "🗑️ 删除服务器"
   enable_server: "✅ 启用服务器"
   disable_server: "❌ 禁用服务器"
   import_servers: "📥 从实时配置导入"
@@ -389,8 +427,8 @@ synced:
 prompts:
   management: "💬 提示词管理"
   label: "提示词："
-  show_content: "👁️  查看完整内容"
-  delete: "🗑️  删除提示词"
+  show_content: "👁️ 查看完整内容"
+  delete: "🗑️ 删除提示词"
   view_current: "📋 查看当前提示词"
 
 activated:
@@ -413,7 +451,7 @@ active: "活动"
 none: "无"
 
 settings:
-  title: "⚙️  设置"
+  title: "⚙️ 设置"
 
 change:
   language: "🌐 切换语言"
@@ -499,3 +537,17 @@ update:
   no_asset: "未找到匹配 {os}/{arch} 的发布资源。"
   permission_denied: "更新 {path} 时权限不足，请使用提升权限（例如 sudo）后重试。"
   unsupported_platform: "当前平台不支持自更新：{os}。"
+config_opencode_header: "OpenCode 配置"
+opencode_npm_label: "OpenCode npm 包名"
+opencode_npm_help: "AI SDK 供应商包名（如 @ai-sdk/openai-compatible）"
+opencode_npm_required_error: "OpenCode npm 包名不能为空"
+opencode_base_url_label: "Base URL"
+opencode_base_url_help: "可选的 API 基础地址"
+opencode_api_key_label: "API Key"
+opencode_api_key_help: "可选的 API Key，可使用 {env:KEY}"
+opencode_models_label: "Models（逗号分隔 ID）"
+opencode_models_help: "可选模型 ID，将以 ID 作为名称"
+opencode_models_count_label: "模型数量"
+opencode_additive_mode_notice: "OpenCode 为累加模式，无当前供应商"
+opencode_no_current_provider: "OpenCode 为累加模式，无当前供应商"
+opencode_switch_not_supported: "OpenCode 不支持切换供应商（累加模式）"

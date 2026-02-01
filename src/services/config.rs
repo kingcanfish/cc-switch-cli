@@ -262,6 +262,7 @@ impl ConfigService {
         Self::sync_current_provider_for_app(config, &AppType::Claude)?;
         Self::sync_current_provider_for_app(config, &AppType::Codex)?;
         Self::sync_current_provider_for_app(config, &AppType::Gemini)?;
+        Self::sync_opencode_live(config)?;
         Ok(())
     }
 
@@ -296,6 +297,38 @@ impl ConfigService {
             AppType::Codex => Self::sync_codex_live(config, &current_id, &provider)?,
             AppType::Claude => Self::sync_claude_live(config, &current_id, &provider)?,
             AppType::Gemini => Self::sync_gemini_live(config, &current_id, &provider)?,
+            AppType::OpenCode => {}
+        }
+
+        Ok(())
+    }
+
+    fn sync_opencode_live(config: &mut MultiAppConfig) -> Result<(), AppError> {
+        if !crate::opencode_config::opencode_dir_exists() {
+            return Ok(());
+        }
+
+        let Some(manager) = config.get_manager(&AppType::OpenCode) else {
+            return Ok(());
+        };
+
+        for provider in manager.providers.values() {
+            let config_to_write = if let Some(obj) = provider.settings_config.as_object() {
+                if obj.contains_key("$schema") || obj.contains_key("provider") {
+                    obj.get("provider")
+                        .and_then(|p| p.get(&provider.id))
+                        .cloned()
+                        .unwrap_or_else(|| provider.settings_config.clone())
+                } else {
+                    provider.settings_config.clone()
+                }
+            } else {
+                provider.settings_config.clone()
+            };
+
+            if let Err(e) = crate::opencode_config::set_provider(&provider.id, config_to_write) {
+                log::warn!("Failed to sync OpenCode provider '{}': {e}", provider.id);
+            }
         }
 
         Ok(())

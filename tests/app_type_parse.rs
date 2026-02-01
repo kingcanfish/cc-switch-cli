@@ -6,11 +6,21 @@ use cc_switch_lib::AppType;
 fn parse_known_apps_case_insensitive_and_trim() {
     assert!(matches!(AppType::from_str("claude"), Ok(AppType::Claude)));
     assert!(matches!(AppType::from_str("codex"), Ok(AppType::Codex)));
+    assert!(matches!(AppType::from_str("gemini"), Ok(AppType::Gemini)));
+    assert!(matches!(
+        AppType::from_str("opencode"),
+        Ok(AppType::OpenCode)
+    ));
     assert!(matches!(
         AppType::from_str(" ClAuDe \n"),
         Ok(AppType::Claude)
     ));
     assert!(matches!(AppType::from_str("\tcoDeX\t"), Ok(AppType::Codex)));
+    assert!(matches!(AppType::from_str(" GEMINI "), Ok(AppType::Gemini)));
+    assert!(matches!(
+        AppType::from_str(" OpenCode "),
+        Ok(AppType::OpenCode)
+    ));
 }
 
 #[test]

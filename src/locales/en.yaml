@@ -67,13 +67,51 @@ main_menu:
 
 menu:
   manage_providers: "🔌 Manage Providers"
-  manage_mcp: "🛠️  Manage MCP Servers"
+  manage_mcp: "🛠️ Manage MCP Servers"
   manage_prompts: "💬 Manage Prompts"
-  manage_config: "⚙️  Manage Configuration"
-  view_config: "👁️  View Current Configuration"
+  manage_skills: "🧰 Manage Skills"
+  manage_config: "⚙️ Manage Configuration"
+  view_config: "👁️ View Current Configuration"
   switch_app: "🔄 Switch Application"
-  settings: "⚙️  Settings"
+  settings: "⚙️ Settings"
   exit: "🚪 Exit"
+
+skills:
+  management: "🧰 Skills Management"
+  list: "📋 List Installed Skills"
+  search: "🔍 Search Skills"
+  install: "➕ Install Skill"
+  uninstall: "🗑️ Uninstall Skill"
+  info: "ℹ️ Skill Info"
+  repos: "📚 Manage Skill Repositories"
+  installed_header: "Installed Skills"
+  available_header: "Available Skills"
+  none_installed: "No skills installed."
+  none_found: "No skills found."
+  search_prompt: "Enter search keyword (empty for all):"
+  select_prompt: "Select a skill:"
+  name_prompt: "Enter skill name or URL:"
+  not_found: "Skill not found: {name}"
+  not_installed: "Installed skill not found: {name}"
+  install_missing_repo: "Skill is local or missing repo metadata; cannot install."
+  installed: "Installed skill: {name}"
+  uninstalled: "Uninstalled skill: {name}"
+  info_header: "Skill Information"
+  label_name: "Name"
+  label_directory: "Directory"
+  label_description: "Description"
+  label_readme: "Readme"
+  label_installed: "Installed"
+  label_apps: "Apps"
+  repos_header: "Skill Repositories"
+  repos_list: "📋 List Repositories"
+  repos_add: "➕ Add Repository"
+  repos_remove: "🗑️ Remove Repository"
+  repos_empty: "No repositories configured."
+  repo_prompt: "Enter repository URL:"
+  repo_invalid_url: "Invalid repository URL"
+  repo_added: "Repository added."
+  repo_removed: "Repository removed."
 
 provider:
   management: "🔌 Provider Management"
@@ -102,9 +140,9 @@ add:
   third_party_provider: "Add Third-Party Provider"
 
 delete:
-  provider: "🗑️  Delete Provider"
+  provider: "🗑️ Delete Provider"
 
-back_to_main: "⬅️  Back to Main Menu"
+back_to_main: "⬅️ Back to Main Menu"
 
 choose:
   action: "Choose an action:"
@@ -118,7 +156,7 @@ current:
   config_header: "Current Configuration:"
   provider_synced_warning: "⚠ This provider is currently active, changes synced to live config"
   config_label: "Current Config:"
-  configuration: "👁️  Current Configuration"
+  configuration: "👁️ Current Configuration"
   language_label: "Current Language"
 
 only:
@@ -178,18 +216,18 @@ config:
   gemini_header: "Configure Gemini Provider:"
   toml_lines: "Config (TOML): {count} lines"
   info_header: "Configuration"
-  management: "⚙️  Configuration Management"
+  management: "⚙️ Configuration Management"
   export: "📤 Export Config"
   import: "📥 Import Config"
   backup: "💾 Backup Config"
-  restore: "♻️  Restore Config"
-  validate: "✓ Validate Config"
+  restore: "♻️ Restore Config"
+  validate: "☑️ Validate Config"
   common_snippet: "🧩 Common Config Snippet"
   reset: "🔄 Reset Config"
-  show_full: "👁️  Show Full Config"
+  show_full: "👁️ Show Full Config"
   show_path: "📍 Show Config Path"
-  valid: "✓ Configuration is valid"
-  reset_done: "✓ Configuration reset to defaults"
+  valid: "☑️ Configuration is valid"
+  reset_done: "☑️ Configuration reset to defaults"
 
 api:
   key_label: "API Key:"
@@ -347,7 +385,7 @@ location:
 edit:
   provider_menu: "➕ Edit Provider"
   mode_interactive: "📝 Interactive editing (step-by-step prompts)"
-  mode_json_editor: "✏️  JSON editing (use external editor)"
+  mode_json_editor: "✏️ JSON editing (use external editor)"
   fields_instruction: "Edit fields one by one (press Enter to keep current value):\n"
 
 cancel: "❌ Cancel"
@@ -371,9 +409,9 @@ updated:
   config_header: "Updated Configuration:"
 
 mcp:
-  management: "🛠️  MCP Server Management"
+  management: "🛠️ MCP Server Management"
   servers_label: "MCP Servers:"
-  delete_server: "🗑️  Delete Server"
+  delete_server: "🗑️ Delete Server"
   enable_server: "✅ Enable Server"
   disable_server: "❌ Disable Server"
   import_servers: "📥 Import from Live Config"
@@ -389,8 +427,8 @@ synced:
 prompts:
   management: "💬 Prompt Management"
   label: "Prompts:"
-  show_content: "👁️  View Full Content"
-  delete: "🗑️  Delete Prompt"
+  show_content: "👁️ View Full Content"
+  delete: "🗑️ Delete Prompt"
   view_current: "📋 View Current Prompt"
 
 activated:
@@ -413,7 +451,7 @@ active: "Active"
 none: "None"
 
 settings:
-  title: "⚙️  Settings"
+  title: "⚙️ Settings"
 
 change:
   language: "🌐 Change Language"
@@ -499,3 +537,17 @@ update:
   no_asset: "No compatible release asset found for {os}/{arch}."
   permission_denied: "Permission denied when updating {path}. Try running with elevated privileges (e.g., sudo)."
   unsupported_platform: "Self-update is not supported on this platform: {os}."
+config_opencode_header: "OpenCode Configuration"
+opencode_npm_label: "OpenCode npm package"
+opencode_npm_help: "AI SDK provider package (e.g., @ai-sdk/openai-compatible)"
+opencode_npm_required_error: "OpenCode npm package is required"
+opencode_base_url_label: "Base URL"
+opencode_base_url_help: "Optional API base URL"
+opencode_api_key_label: "API Key"
+opencode_api_key_help: "Optional API key; you can use {env:KEY}"
+opencode_models_label: "Models (comma-separated IDs)"
+opencode_models_help: "Optional model IDs; each will use the ID as name"
+opencode_models_count_label: "Models"
+opencode_additive_mode_notice: "OpenCode is additive mode; no current provider"
+opencode_no_current_provider: "OpenCode uses additive mode; no current provider"
+opencode_switch_not_supported: "OpenCode does not support switching providers (additive mode)"

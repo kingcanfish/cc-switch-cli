@@ -42,6 +42,8 @@ pub struct AppSettings {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub gemini_config_dir: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub opencode_config_dir: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub security: Option<SecuritySettings>,
@@ -100,6 +102,13 @@ impl AppSettings {
 
         self.gemini_config_dir = self
             .gemini_config_dir
+            .as_ref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+
+        self.opencode_config_dir = self
+            .opencode_config_dir
             .as_ref()
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
@@ -211,6 +220,14 @@ pub fn get_gemini_override_dir() -> Option<PathBuf> {
     let settings = settings_store().read().ok()?;
     settings
         .gemini_config_dir
+        .as_ref()
+        .map(|p| resolve_override_path(p))
+}
+
+pub fn get_opencode_override_dir() -> Option<PathBuf> {
+    let settings = settings_store().read().ok()?;
+    settings
+        .opencode_config_dir
         .as_ref()
         .map(|p| resolve_override_path(p))
 }

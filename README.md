@@ -7,9 +7,9 @@
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Command-Line Management Tool for Claude Code, Codex & Gemini CLI**
+**Command-Line Management Tool for Claude Code, Codex, Gemini & OpenCode CLI**
 
-Unified management for Claude Code, Codex & Gemini CLI provider configurations, MCP servers, Skills extensions, and system prompts.
+Unified management for Claude Code, Codex, Gemini & OpenCode CLI provider configurations, MCP servers, Skills extensions, and system prompts.
 
 [English](README.md) | [中文](README_ZH.md)
 
@@ -44,8 +44,9 @@ cc-switch-cli mcp sync                   # Sync MCP servers
 cc-switch-cli --app claude provider list    # Manage Claude providers
 cc-switch-cli --app codex mcp sync          # Sync Codex MCP servers
 cc-switch-cli --app gemini prompts list     # List Gemini prompts
+cc-switch-cli --app opencode provider list  # Manage OpenCode providers
 
-# Supported apps: `claude` (default), `codex`, `gemini`
+# Supported apps: `claude` (default), `codex`, `gemini`, `opencode`
 ```
 
 See the "Features" section below for full command list.
@@ -56,7 +57,7 @@ See the "Features" section below for full command list.
 
 ### 🔌 Provider Management
 
-Manage API configurations for **Claude Code**, **Codex**, and **Gemini**.
+Manage API configurations for **Claude Code**, **Codex**, **Gemini**, and **OpenCode**.
 
 **Features:** One-click switching, multi-endpoint support, API key management, speed testing, provider duplication.
 
@@ -71,9 +72,11 @@ cc-switch-cli provider delete <id>       # Delete provider
 cc-switch-cli provider speedtest <id>    # Test API latency
 ```
 
+**OpenCode note:** OpenCode uses additive providers (no “current” switch). Use add/edit/delete to manage entries.
+
 ### 🛠️ MCP Server Management
 
-Manage Model Context Protocol servers across Claude/Codex/Gemini.
+Manage Model Context Protocol servers across Claude/Codex/Gemini/OpenCode.
 
 **Features:** Unified management, multi-app support, three transport types (stdio/http/sse), automatic sync, smart TOML parser.
 
@@ -93,7 +96,7 @@ cc-switch-cli mcp import --app claude    # Import from live config
 
 Manage system prompt presets for AI coding assistants.
 
-**Cross-app support:** Claude (`CLAUDE.md`), Codex (`AGENTS.md`), Gemini (`GEMINI.md`).
+**Cross-app support:** Claude (`CLAUDE.md`), Codex (`AGENTS.md`), Gemini (`GEMINI.md`), OpenCode (`AGENTS.md`).
 
 ```bash
 cc-switch-cli prompts list               # List prompt presets
@@ -108,9 +111,7 @@ cc-switch-cli prompts delete <id>        # Delete prompt
 
 ### 🎯 Skills Management
 
-⚠️ **Note: Not yet implemented in v0.0.2** - This feature is planned for future releases.
-
-Manage and extend Claude Code/Codex/Gemini capabilities with community skills.
+Manage and extend Claude Code/Codex/Gemini/OpenCode capabilities with community skills.
 
 **Features:** Search skill marketplace, install/uninstall, repository management, skill information.
 
@@ -297,6 +298,7 @@ copy target\release\cc-switch-cli.exe C:\Windows\System32\
 - Claude: `~/.claude/settings.json`, `~/.claude.json` (MCP), `~/.claude/CLAUDE.md` (prompts)
 - Codex: `~/.codex/auth.json`, `~/.codex/config.toml` (MCP), `~/.codex/AGENTS.md` (prompts)
 - Gemini: `~/.gemini/.env`, `~/.gemini/settings.json` (MCP), `~/.gemini/GEMINI.md` (prompts)
+- OpenCode: `~/.config/opencode/opencode.json` (providers & MCP), `~/.config/opencode/AGENTS.md` (prompts)
 
 ---
 
@@ -339,10 +341,11 @@ This is usually caused by **environment variable conflicts**. If you have API ke
 
 <br>
 
-CC-Switch currently supports three AI coding assistants:
+CC-Switch currently supports four AI coding assistants:
 - **Claude Code** (`--app claude`, default)
 - **Codex** (`--app codex`)
 - **Gemini** (`--app gemini`)
+- **OpenCode** (`--app opencode`)
 
 Use the global `--app` flag to specify which app to manage:
 ```bash

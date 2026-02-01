@@ -33,6 +33,7 @@ fn inquire_color_for_app(app_type: &AppType) -> InquireColor {
         AppType::Codex => InquireColor::LightGreen,
         AppType::Claude => InquireColor::LightCyan,
         AppType::Gemini => InquireColor::LightMagenta,
+        AppType::OpenCode => InquireColor::LightBlue,
     }
 }
 
@@ -82,6 +83,7 @@ fn highlight_color_for_app(app_type: &AppType) -> Color {
         AppType::Codex => Color::BrightGreen,
         AppType::Claude => Color::BrightCyan,
         AppType::Gemini => Color::BrightMagenta,
+        AppType::OpenCode => Color::BrightBlue,
     }
 }
 
@@ -137,6 +139,12 @@ mod tests {
         assert_eq!(
             highlight("x"),
             "x".color(Color::BrightMagenta).bold().to_string()
+        );
+
+        set_tui_theme_app(Some(AppType::OpenCode));
+        assert_eq!(
+            highlight("x"),
+            "x".color(Color::BrightBlue).bold().to_string()
         );
     }
 }

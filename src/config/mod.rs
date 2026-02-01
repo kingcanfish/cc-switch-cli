@@ -8,6 +8,7 @@ use crate::error::AppError;
 pub mod claude;
 pub mod codex;
 pub mod gemini;
+pub mod opencode;
 
 pub trait AppConfigPaths {
     fn override_dir() -> Option<PathBuf>;

@@ -183,15 +183,20 @@ fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppE
     };
 
     if apply {
-        let current_id = ProviderService::current(&state, app_type.clone())?;
-        if current_id.trim().is_empty() {
-            println!(
-                "{}",
-                info(texts::common_config_snippet_no_current_provider())
-            );
-        } else {
-            ProviderService::switch(&state, app_type.clone(), &current_id)?;
+        if matches!(app_type, AppType::OpenCode) {
+            ProviderService::sync_opencode_to_live(&state)?;
             println!("{}", success(texts::common_config_snippet_applied()));
+        } else {
+            let current_id = ProviderService::current(&state, app_type.clone())?;
+            if current_id.trim().is_empty() {
+                println!(
+                    "{}",
+                    info(texts::common_config_snippet_no_current_provider())
+                );
+            } else {
+                ProviderService::switch(&state, app_type.clone(), &current_id)?;
+                println!("{}", success(texts::common_config_snippet_applied()));
+            }
         }
     } else {
         println!("{}", info(texts::common_config_snippet_apply_hint()));
@@ -251,7 +256,7 @@ fn show_full_config_interactive() -> Result<(), AppError> {
 
     println!(
         "\n{}",
-        highlight(texts::config_show_full().trim_start_matches("👁️  "))
+        highlight(texts::config_show_full().trim_start_matches("👁️ "))
     );
     println!("{}", "─".repeat(60));
     println!("{}", json);
@@ -368,7 +373,7 @@ fn restore_config_interactive() -> Result<(), AppError> {
     clear_screen();
     println!(
         "\n{}",
-        highlight(texts::config_restore().trim_start_matches("♻️  "))
+        highlight(texts::config_restore().trim_start_matches("♻️ "))
     );
     println!("{}", "─".repeat(60));
 
@@ -478,11 +483,17 @@ fn validate_config_interactive() -> Result<(), AppError> {
         .get("gemini")
         .map(|m| m.providers.len())
         .unwrap_or(0);
+    let opencode_count = config
+        .apps
+        .get("opencode")
+        .map(|m| m.providers.len())
+        .unwrap_or(0);
     let mcp_count = config.mcp.servers.as_ref().map(|s| s.len()).unwrap_or(0);
 
     println!("Claude providers: {}", claude_count);
     println!("Codex providers:  {}", codex_count);
     println!("Gemini providers: {}", gemini_count);
+    println!("OpenCode providers: {}", opencode_count);
     println!("MCP servers:      {}", mcp_count);
 
     pause();

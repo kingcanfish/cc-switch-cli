@@ -81,7 +81,7 @@ pub fn execute(cmd: ConfigCommand, app: Option<AppType>) -> Result<(), AppError>
     match cmd {
         ConfigCommand::Show => show_config(),
         ConfigCommand::Path => show_path(),
-        ConfigCommand::Export { file } => export_config(&file),
+        ConfigCommand::Export { file } => export_config(file.as_path()),
         ConfigCommand::Import { file } => import_config(&file),
         ConfigCommand::Backup { name } => backup_config(name.as_deref()),
         ConfigCommand::Restore { backup, file } => {
@@ -232,6 +232,12 @@ fn clear_common(app_type: AppType, apply: bool) -> Result<(), AppError> {
 fn apply_common_to_current(state: &AppState, app_type: AppType) -> Result<(), AppError> {
     use crate::services::ProviderService;
 
+    if matches!(app_type, AppType::OpenCode) {
+        ProviderService::sync_opencode_to_live(state)?;
+        println!("{}", success("✓ Applied to OpenCode live config."));
+        return Ok(());
+    }
+
     let current_id = ProviderService::current(state, app_type.clone())?;
     if current_id.trim().is_empty() {
         println!("{}", info("No current provider; nothing to apply."));
@@ -281,7 +287,7 @@ fn show_path() -> Result<(), AppError> {
     Ok(())
 }
 
-fn export_config(file: &PathBuf) -> Result<(), AppError> {
+fn export_config(file: &Path) -> Result<(), AppError> {
     println!(
         "{}",
         info(&format!("Exporting configuration to {}...", file.display()))
@@ -620,6 +626,10 @@ fn validate_config() -> Result<(), AppError> {
                 .get_manager(&crate::app_config::AppType::Gemini)
                 .map(|m| m.providers.len())
                 .unwrap_or(0);
+            let opencode_count = config
+                .get_manager(&crate::app_config::AppType::OpenCode)
+                .map(|m| m.providers.len())
+                .unwrap_or(0);
             let mcp_count = config.mcp.servers.as_ref().map(|s| s.len()).unwrap_or(0);
 
             println!();
@@ -627,6 +637,7 @@ fn validate_config() -> Result<(), AppError> {
             println!("Claude providers:  {}", claude_count);
             println!("Codex providers:   {}", codex_count);
             println!("Gemini providers:  {}", gemini_count);
+            println!("OpenCode providers: {}", opencode_count);
             println!("MCP servers:       {}", mcp_count);
 
             println!();

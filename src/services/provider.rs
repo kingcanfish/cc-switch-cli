@@ -7,9 +7,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::app_config::{AppType, MultiAppConfig};
 use crate::config::claude::{get_claude_settings_path, get_provider_config_path};
 use crate::config::codex::{get_codex_auth_path, get_codex_config_path};
+use crate::config::opencode::get_opencode_config_path;
 use crate::config::{delete_file, read_json_file, write_json_file, write_text_file};
 use crate::error::AppError;
-use crate::provider::{Provider, ProviderMeta, UsageData, UsageResult};
+use crate::opencode_config;
+use crate::provider::{OpenCodeProviderConfig, Provider, ProviderMeta, UsageData, UsageResult};
 use crate::settings::{self, CustomEndpoint};
 use crate::store::AppState;
 use crate::usage_script;
@@ -38,6 +40,9 @@ enum LiveSnapshot {
     Gemini {
         env: Option<HashMap<String, String>>, // 新增
         config: Option<Value>,                // 新增：settings.json 内容
+    },
+    OpenCode {
+        config: Option<Value>,
     },
 }
 
@@ -100,6 +105,14 @@ impl LiveSnapshot {
                         delete_file(&settings_path)?;
                     }
                     _ => {}
+                }
+            }
+            LiveSnapshot::OpenCode { config } => {
+                let path = get_opencode_config_path();
+                if let Some(value) = config {
+                    write_json_file(&path, value)?;
+                } else if path.exists() {
+                    delete_file(&path)?;
                 }
             }
         }
@@ -621,6 +634,24 @@ impl ProviderService {
         Ok(value)
     }
 
+    fn parse_common_opencode_config_snippet(snippet: &str) -> Result<Value, AppError> {
+        let value: Value = serde_json::from_str(snippet).map_err(|e| {
+            AppError::localized(
+                "common_config.opencode.invalid_json",
+                format!("OpenCode 通用配置片段不是有效的 JSON：{e}"),
+                format!("OpenCode common config snippet is not valid JSON: {e}"),
+            )
+        })?;
+        if !value.is_object() {
+            return Err(AppError::localized(
+                "common_config.opencode.not_object",
+                "OpenCode 通用配置片段必须是 JSON 对象",
+                "OpenCode common config snippet must be a JSON object",
+            ));
+        }
+        Ok(value)
+    }
+
     /// 检测 Gemini 供应商的认证类型
     ///
     /// 只区分两种认证方式：OAuth (Google 官方) 和 API Key (所有其他供应商)
@@ -1006,6 +1037,43 @@ impl ProviderService {
                 }
                 state.save()?;
             }
+            AppType::OpenCode => {
+                let config_path = get_opencode_config_path();
+                if !config_path.exists() {
+                    return Ok(());
+                }
+
+                let config = opencode_config::read_opencode_config()?;
+                let mut provider_value = config
+                    .get("provider")
+                    .and_then(|p| p.get(provider_id))
+                    .cloned();
+
+                if let Some(value) = provider_value.as_mut() {
+                    let common_snippet = {
+                        let guard = state.config.read().map_err(AppError::from)?;
+                        guard.common_config_snippets.opencode.clone()
+                    };
+                    if let Some(snippet) = common_snippet.as_deref() {
+                        let snippet = snippet.trim();
+                        if !snippet.is_empty() {
+                            let common = Self::parse_common_opencode_config_snippet(snippet)?;
+                            strip_common_values(value, &common);
+                        }
+                    }
+                }
+
+                if let Some(value) = provider_value {
+                    let mut guard = state.config.write().map_err(AppError::from)?;
+                    if let Some(manager) = guard.get_manager_mut(app_type) {
+                        if let Some(target) = manager.providers.get_mut(provider_id) {
+                            target.settings_config = value;
+                        }
+                    }
+                    drop(guard);
+                    state.save()?;
+                }
+            }
         }
         Ok(())
     }
@@ -1058,6 +1126,15 @@ impl ProviderService {
                 };
                 Ok(LiveSnapshot::Gemini { env, config })
             }
+            AppType::OpenCode => {
+                let config_path = get_opencode_config_path();
+                let config = if config_path.exists() {
+                    Some(read_json_file(&config_path)?)
+                } else {
+                    None
+                };
+                Ok(LiveSnapshot::OpenCode { config })
+            }
         }
     }
 
@@ -1075,6 +1152,9 @@ impl ProviderService {
 
     /// 获取当前供应商 ID
     pub fn current(state: &AppState, app_type: AppType) -> Result<String, AppError> {
+        if matches!(app_type, AppType::OpenCode) {
+            return Ok(String::new());
+        }
         let config = state.config.read().map_err(AppError::from)?;
         let manager = config
             .get_manager(&app_type)
@@ -1103,12 +1183,14 @@ impl ProviderService {
                 .providers
                 .insert(provider_clone.id.clone(), provider_clone.clone());
 
-            if was_empty && manager.current.is_empty() {
+            if !matches!(app_type_clone, AppType::OpenCode)
+                && was_empty
+                && manager.current.is_empty()
+            {
                 manager.current = provider_clone.id.clone();
             }
 
-            let is_current = manager.current == provider_clone.id;
-            let action = if is_current {
+            let action = if matches!(app_type_clone, AppType::OpenCode) {
                 let backup = Self::capture_live_snapshot(&app_type_clone)?;
                 let common_config_snippet =
                     config.common_config_snippets.get(&app_type_clone).cloned();
@@ -1121,9 +1203,23 @@ impl ProviderService {
                     common_config_snippet,
                 })
             } else {
-                None
+                let is_current = manager.current == provider_clone.id;
+                if !is_current {
+                    None
+                } else {
+                    let backup = Self::capture_live_snapshot(&app_type_clone)?;
+                    let common_config_snippet =
+                        config.common_config_snippets.get(&app_type_clone).cloned();
+                    Some(PostCommitAction {
+                        app_type: app_type_clone.clone(),
+                        provider: provider_clone.clone(),
+                        backup,
+                        sync_mcp: false,
+                        refresh_snapshot: false,
+                        common_config_snippet,
+                    })
+                }
             };
-
             Ok((true, action))
         })
     }
@@ -1155,7 +1251,6 @@ impl ProviderService {
                 ));
             }
 
-            let is_current = manager.current == provider_id;
             let merged = if let Some(existing) = manager.providers.get(&provider_id) {
                 let mut updated = provider_clone.clone();
                 match (existing.meta.as_ref(), updated.meta.take()) {
@@ -1178,7 +1273,7 @@ impl ProviderService {
 
             manager.providers.insert(provider_id.clone(), merged);
 
-            let action = if is_current {
+            let action = if matches!(app_type_clone, AppType::OpenCode) {
                 let backup = Self::capture_live_snapshot(&app_type_clone)?;
                 let common_config_snippet =
                     config.common_config_snippets.get(&app_type_clone).cloned();
@@ -1191,7 +1286,22 @@ impl ProviderService {
                     common_config_snippet,
                 })
             } else {
-                None
+                let is_current = manager.current == provider_id;
+                if !is_current {
+                    None
+                } else {
+                    let backup = Self::capture_live_snapshot(&app_type_clone)?;
+                    let common_config_snippet =
+                        config.common_config_snippets.get(&app_type_clone).cloned();
+                    Some(PostCommitAction {
+                        app_type: app_type_clone.clone(),
+                        provider: provider_clone.clone(),
+                        backup,
+                        sync_mcp: false,
+                        refresh_snapshot: false,
+                        common_config_snippet,
+                    })
+                }
             };
 
             Ok((true, action))
@@ -1207,6 +1317,11 @@ impl ProviderService {
                     return Ok(());
                 }
             }
+        }
+
+        if matches!(app_type, AppType::OpenCode) {
+            let _ = Self::import_opencode_providers_from_live(state)?;
+            return Ok(());
         }
 
         let settings_config = match app_type {
@@ -1268,6 +1383,13 @@ impl ProviderService {
                     "env": env_obj,
                     "config": config_obj
                 })
+            }
+            AppType::OpenCode => {
+                return Err(AppError::localized(
+                    "opencode.import_default.unsupported",
+                    "OpenCode 不支持默认供应商导入",
+                    "OpenCode does not support default provider import",
+                ));
             }
         };
 
@@ -1354,7 +1476,73 @@ impl ProviderService {
                     "config": config_obj
                 }))
             }
+            AppType::OpenCode => {
+                let config_path = get_opencode_config_path();
+                if !config_path.exists() {
+                    return Err(AppError::localized(
+                        "opencode.config.missing",
+                        "OpenCode 配置文件不存在",
+                        "OpenCode configuration file not found",
+                    ));
+                }
+
+                opencode_config::read_opencode_config()
+            }
         }
+    }
+
+    pub fn import_opencode_providers_from_live(state: &AppState) -> Result<usize, AppError> {
+        let providers = opencode_config::get_typed_providers()?;
+        if providers.is_empty() {
+            return Ok(0);
+        }
+
+        let mut imported = 0;
+
+        {
+            let mut config = state.config.write().map_err(AppError::from)?;
+            config.ensure_app(&AppType::OpenCode);
+            let manager = config
+                .get_manager_mut(&AppType::OpenCode)
+                .ok_or_else(|| Self::app_not_found(&AppType::OpenCode))?;
+
+            for (id, config_item) in providers {
+                if manager.providers.contains_key(&id) {
+                    continue;
+                }
+
+                let settings_config = serde_json::to_value(&config_item)
+                    .map_err(|e| AppError::JsonSerialize { source: e })?;
+                let provider = Provider::with_id(
+                    id.clone(),
+                    config_item.name.clone().unwrap_or_else(|| id.clone()),
+                    settings_config,
+                    None,
+                );
+                manager.providers.insert(id, provider);
+                imported += 1;
+            }
+        }
+
+        if imported > 0 {
+            state.save()?;
+        }
+
+        Ok(imported)
+    }
+
+    pub fn sync_opencode_to_live(state: &AppState) -> Result<(), AppError> {
+        let config = state.config.read().map_err(AppError::from)?;
+        let Some(manager) = config.get_manager(&AppType::OpenCode) else {
+            return Ok(());
+        };
+
+        let common_snippet = config.common_config_snippets.opencode.clone();
+        for provider in manager.providers.values() {
+            Self::write_opencode_live(provider, common_snippet.as_deref())?;
+        }
+
+        Ok(())
     }
 
     /// 获取自定义端点列表
@@ -1655,6 +1843,13 @@ impl ProviderService {
 
     /// 切换指定应用的供应商
     pub fn switch(state: &AppState, app_type: AppType, provider_id: &str) -> Result<(), AppError> {
+        if matches!(app_type, AppType::OpenCode) {
+            return Err(AppError::localized(
+                "provider.opencode.no_switch",
+                "OpenCode 不支持切换供应商（累加模式）",
+                "OpenCode does not support switching providers (additive mode)",
+            ));
+        }
         let app_type_clone = app_type.clone();
         let provider_id_owned = provider_id.to_string();
 
@@ -1664,6 +1859,13 @@ impl ProviderService {
                 AppType::Codex => Self::prepare_switch_codex(config, &provider_id_owned)?,
                 AppType::Claude => Self::prepare_switch_claude(config, &provider_id_owned)?,
                 AppType::Gemini => Self::prepare_switch_gemini(config, &provider_id_owned)?,
+                AppType::OpenCode => {
+                    return Err(AppError::localized(
+                        "provider.opencode.no_switch",
+                        "OpenCode 不支持切换供应商（累加模式）",
+                        "OpenCode does not support switching providers (additive mode)",
+                    ));
+                }
             };
 
             let action = PostCommitAction {
@@ -2144,6 +2346,63 @@ impl ProviderService {
         Ok(())
     }
 
+    fn write_opencode_live(
+        provider: &Provider,
+        common_config_snippet: Option<&str>,
+    ) -> Result<(), AppError> {
+        let provider_content = provider.settings_config.clone();
+        let content_to_write = if let Some(snippet) = common_config_snippet {
+            let snippet = snippet.trim();
+            if snippet.is_empty() {
+                provider_content
+            } else {
+                let common = Self::parse_common_opencode_config_snippet(snippet)?;
+                let mut merged = common;
+                merge_json_values(&mut merged, &provider_content);
+                merged
+            }
+        } else {
+            provider_content
+        };
+
+        let config_to_write = if let Some(obj) = content_to_write.as_object() {
+            if obj.contains_key("$schema") || obj.contains_key("provider") {
+                obj.get("provider")
+                    .and_then(|p| p.get(&provider.id))
+                    .cloned()
+                    .unwrap_or_else(|| content_to_write.clone())
+            } else {
+                content_to_write.clone()
+            }
+        } else {
+            content_to_write.clone()
+        };
+
+        let parsed = serde_json::from_value::<OpenCodeProviderConfig>(config_to_write.clone());
+        match parsed {
+            Ok(config) => opencode_config::set_typed_provider(&provider.id, &config),
+            Err(e) => {
+                log::warn!(
+                    "Failed to parse OpenCode provider config for '{}': {}",
+                    provider.id,
+                    e
+                );
+                if config_to_write
+                    .get("npm")
+                    .or_else(|| config_to_write.get("options"))
+                    .is_some()
+                {
+                    opencode_config::set_provider(&provider.id, config_to_write)
+                } else {
+                    Err(AppError::Config(format!(
+                        "OpenCode provider '{}' config is invalid",
+                        provider.id
+                    )))
+                }
+            }
+        }
+    }
+
     fn write_live_snapshot(
         app_type: &AppType,
         provider: &Provider,
@@ -2153,6 +2412,7 @@ impl ProviderService {
             AppType::Codex => Self::write_codex_live(provider),
             AppType::Claude => Self::write_claude_live(provider, common_config_snippet),
             AppType::Gemini => Self::write_gemini_live(provider, common_config_snippet), // 新增
+            AppType::OpenCode => Self::write_opencode_live(provider, common_config_snippet),
         }
     }
 
@@ -2208,6 +2468,26 @@ impl ProviderService {
                 // 新增
                 use crate::config::gemini::validate_gemini_settings;
                 validate_gemini_settings(&provider.settings_config)?
+            }
+            AppType::OpenCode => {
+                let settings = provider.settings_config.as_object().ok_or_else(|| {
+                    AppError::localized(
+                        "provider.opencode.settings.not_object",
+                        "OpenCode 配置必须是 JSON 对象",
+                        "OpenCode configuration must be a JSON object",
+                    )
+                })?;
+
+                if settings.get("provider").is_none() {
+                    let npm = settings.get("npm").and_then(Value::as_str).unwrap_or("");
+                    if npm.trim().is_empty() {
+                        return Err(AppError::localized(
+                            "provider.opencode.npm.missing",
+                            "OpenCode 配置缺少 npm 字段",
+                            "OpenCode configuration is missing npm field",
+                        ));
+                    }
+                }
             }
         }
 
@@ -2367,6 +2647,39 @@ impl ProviderService {
 
                 Ok((api_key, base_url))
             }
+            AppType::OpenCode => {
+                let options = provider
+                    .settings_config
+                    .get("options")
+                    .and_then(|v| v.as_object())
+                    .ok_or_else(|| {
+                        AppError::localized(
+                            "provider.opencode.options.missing",
+                            "配置格式错误: 缺少 options",
+                            "Invalid configuration: missing options section",
+                        )
+                    })?;
+
+                let api_key = options
+                    .get("apiKey")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        AppError::localized(
+                            "provider.opencode.api_key.missing",
+                            "缺少 API Key",
+                            "API key is missing",
+                        )
+                    })?
+                    .to_string();
+
+                let base_url = options
+                    .get("baseURL")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                Ok((api_key, base_url))
+            }
         }
     }
 
@@ -2392,7 +2705,7 @@ impl ProviderService {
                 .get_manager(&app_type)
                 .ok_or_else(|| Self::app_not_found(&app_type))?;
 
-            if manager.current == provider_id {
+            if !matches!(app_type, AppType::OpenCode) && manager.current == provider_id {
                 return Err(AppError::localized(
                     "provider.delete.current",
                     "不能删除当前正在使用的供应商",
@@ -2427,6 +2740,9 @@ impl ProviderService {
             AppType::Gemini => {
                 // Gemini 使用单一的 .env 文件，不需要删除单独的供应商配置文件
             }
+            AppType::OpenCode => {
+                opencode_config::remove_provider(provider_id)?;
+            }
         }
 
         {
@@ -2435,7 +2751,7 @@ impl ProviderService {
                 .get_manager_mut(&app_type)
                 .ok_or_else(|| Self::app_not_found(&app_type))?;
 
-            if manager.current == provider_id {
+            if !matches!(app_type, AppType::OpenCode) && manager.current == provider_id {
                 return Err(AppError::localized(
                     "provider.delete.current",
                     "不能删除当前正在使用的供应商",

@@ -20,10 +20,12 @@ pub fn cycle_app_type(current: &AppType, direction: AppSwitchDirection) -> AppTy
     match (current, direction) {
         (AppType::Claude, AppSwitchDirection::Next) => AppType::Codex,
         (AppType::Codex, AppSwitchDirection::Next) => AppType::Gemini,
-        (AppType::Gemini, AppSwitchDirection::Next) => AppType::Claude,
-        (AppType::Claude, AppSwitchDirection::Previous) => AppType::Gemini,
+        (AppType::Gemini, AppSwitchDirection::Next) => AppType::OpenCode,
+        (AppType::OpenCode, AppSwitchDirection::Next) => AppType::Claude,
+        (AppType::Claude, AppSwitchDirection::Previous) => AppType::OpenCode,
         (AppType::Codex, AppSwitchDirection::Previous) => AppType::Claude,
         (AppType::Gemini, AppSwitchDirection::Previous) => AppType::Codex,
+        (AppType::OpenCode, AppSwitchDirection::Previous) => AppType::Gemini,
     }
 }
 
@@ -136,6 +138,10 @@ mod tests {
         );
         assert_eq!(
             cycle_app_type(&AppType::Gemini, AppSwitchDirection::Next),
+            AppType::OpenCode
+        );
+        assert_eq!(
+            cycle_app_type(&AppType::OpenCode, AppSwitchDirection::Next),
             AppType::Claude
         );
     }
@@ -144,7 +150,7 @@ mod tests {
     fn cycle_app_type_previous_wraps() {
         assert_eq!(
             cycle_app_type(&AppType::Claude, AppSwitchDirection::Previous),
-            AppType::Gemini
+            AppType::OpenCode
         );
         assert_eq!(
             cycle_app_type(&AppType::Codex, AppSwitchDirection::Previous),
@@ -153,6 +159,10 @@ mod tests {
         assert_eq!(
             cycle_app_type(&AppType::Gemini, AppSwitchDirection::Previous),
             AppType::Codex
+        );
+        assert_eq!(
+            cycle_app_type(&AppType::OpenCode, AppSwitchDirection::Previous),
+            AppType::Gemini
         );
     }
 

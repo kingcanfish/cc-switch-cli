@@ -203,6 +203,7 @@ fn import_from(config: &mut MultiAppConfig) -> Result<usize, AppError> {
                         claude: false,
                         codex: false,
                         gemini: true,
+                        opencode: false,
                     },
                     description: None,
                     homepage: None,

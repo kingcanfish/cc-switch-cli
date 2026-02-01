@@ -19,6 +19,7 @@ impl PromptService {
             AppType::Claude => &cfg.prompts.claude.prompts,
             AppType::Codex => &cfg.prompts.codex.prompts,
             AppType::Gemini => &cfg.prompts.gemini.prompts,
+            AppType::OpenCode => &cfg.prompts.opencode.prompts,
         };
         Ok(prompts.clone())
     }
@@ -37,6 +38,7 @@ impl PromptService {
             AppType::Claude => &mut cfg.prompts.claude.prompts,
             AppType::Codex => &mut cfg.prompts.codex.prompts,
             AppType::Gemini => &mut cfg.prompts.gemini.prompts,
+            AppType::OpenCode => &mut cfg.prompts.opencode.prompts,
         };
         prompts.insert(id.to_string(), prompt.clone());
         drop(cfg);
@@ -57,6 +59,7 @@ impl PromptService {
             AppType::Claude => &mut cfg.prompts.claude.prompts,
             AppType::Codex => &mut cfg.prompts.codex.prompts,
             AppType::Gemini => &mut cfg.prompts.gemini.prompts,
+            AppType::OpenCode => &mut cfg.prompts.opencode.prompts,
         };
 
         if let Some(prompt) = prompts.get(id) {
@@ -82,6 +85,7 @@ impl PromptService {
                         AppType::Claude => &mut cfg.prompts.claude.prompts,
                         AppType::Codex => &mut cfg.prompts.codex.prompts,
                         AppType::Gemini => &mut cfg.prompts.gemini.prompts,
+                        AppType::OpenCode => &mut cfg.prompts.opencode.prompts,
                     };
 
                     // 尝试回填到当前已启用的提示词
@@ -141,6 +145,7 @@ impl PromptService {
             AppType::Claude => &mut cfg.prompts.claude.prompts,
             AppType::Codex => &mut cfg.prompts.codex.prompts,
             AppType::Gemini => &mut cfg.prompts.gemini.prompts,
+            AppType::OpenCode => &mut cfg.prompts.opencode.prompts,
         };
 
         for prompt in prompts.values_mut() {
@@ -165,6 +170,7 @@ impl PromptService {
             AppType::Claude => &mut cfg.prompts.claude.prompts,
             AppType::Codex => &mut cfg.prompts.codex.prompts,
             AppType::Gemini => &mut cfg.prompts.gemini.prompts,
+            AppType::OpenCode => &mut cfg.prompts.opencode.prompts,
         };
 
         // 验证提示词是否存在且已启用

@@ -76,7 +76,7 @@ pub fn set_language(lang: Language) -> Result<(), crate::error::AppError> {
     update_settings(settings)
 }
 
-/// Check if current language is Chinese
+// Check if current language is Chinese
 // ============================================================================
 // Locale loading and lookup
 // ============================================================================
@@ -119,8 +119,7 @@ fn flatten_locale_value(
             }
         }
         serde_yaml::Value::String(value) => {
-            let key = prefix
-                .unwrap_or_else(|| panic!("Locale root must be a mapping, got string"));
+            let key = prefix.unwrap_or_else(|| panic!("Locale root must be a mapping, got string"));
             out.insert(key.to_string(), value.clone());
         }
         other => {
@@ -322,6 +321,10 @@ pub mod texts {
         text("menu_manage_prompts")
     }
 
+    pub fn menu_manage_skills() -> &'static str {
+        text("menu_manage_skills")
+    }
+
     pub fn menu_manage_config() -> &'static str {
         text("menu_manage_config")
     }
@@ -340,6 +343,146 @@ pub mod texts {
 
     pub fn menu_exit() -> &'static str {
         text("menu_exit")
+    }
+
+    pub fn skills_management() -> &'static str {
+        text("skills_management")
+    }
+
+    pub fn skills_list() -> &'static str {
+        text("skills_list")
+    }
+
+    pub fn skills_search() -> &'static str {
+        text("skills_search")
+    }
+
+    pub fn skills_install() -> &'static str {
+        text("skills_install")
+    }
+
+    pub fn skills_uninstall() -> &'static str {
+        text("skills_uninstall")
+    }
+
+    pub fn skills_info() -> &'static str {
+        text("skills_info")
+    }
+
+    pub fn skills_repos() -> &'static str {
+        text("skills_repos")
+    }
+
+    pub fn skills_installed_header() -> &'static str {
+        text("skills_installed_header")
+    }
+
+    pub fn skills_available_header() -> &'static str {
+        text("skills_available_header")
+    }
+
+    pub fn skills_none_installed() -> &'static str {
+        text("skills_none_installed")
+    }
+
+    pub fn skills_none_found() -> &'static str {
+        text("skills_none_found")
+    }
+
+    pub fn skills_search_prompt() -> &'static str {
+        text("skills_search_prompt")
+    }
+
+    pub fn skills_select_prompt() -> &'static str {
+        text("skills_select_prompt")
+    }
+
+    pub fn skills_name_prompt() -> &'static str {
+        text("skills_name_prompt")
+    }
+
+    pub fn skills_not_found(name: &str) -> String {
+        text_with_args("skills_not_found", &[("name", name)])
+    }
+
+    pub fn skills_not_installed(name: &str) -> String {
+        text_with_args("skills_not_installed", &[("name", name)])
+    }
+
+    pub fn skills_install_missing_repo() -> &'static str {
+        text("skills_install_missing_repo")
+    }
+
+    pub fn skills_installed(name: &str) -> String {
+        text_with_args("skills_installed", &[("name", name)])
+    }
+
+    pub fn skills_uninstalled(name: &str) -> String {
+        text_with_args("skills_uninstalled", &[("name", name)])
+    }
+
+    pub fn skills_info_header() -> &'static str {
+        text("skills_info_header")
+    }
+
+    pub fn skills_label_name() -> &'static str {
+        text("skills_label_name")
+    }
+
+    pub fn skills_label_directory() -> &'static str {
+        text("skills_label_directory")
+    }
+
+    pub fn skills_label_description() -> &'static str {
+        text("skills_label_description")
+    }
+
+    pub fn skills_label_readme() -> &'static str {
+        text("skills_label_readme")
+    }
+
+    pub fn skills_label_installed() -> &'static str {
+        text("skills_label_installed")
+    }
+
+    pub fn skills_label_apps() -> &'static str {
+        text("skills_label_apps")
+    }
+
+    pub fn skills_repos_header() -> &'static str {
+        text("skills_repos_header")
+    }
+
+    pub fn skills_repos_list() -> &'static str {
+        text("skills_repos_list")
+    }
+
+    pub fn skills_repos_add() -> &'static str {
+        text("skills_repos_add")
+    }
+
+    pub fn skills_repos_remove() -> &'static str {
+        text("skills_repos_remove")
+    }
+
+    pub fn skills_repos_empty() -> &'static str {
+        text("skills_repos_empty")
+    }
+
+    pub fn skills_repo_prompt() -> &'static str {
+        text("skills_repo_prompt")
+    }
+
+    pub fn skills_repo_invalid_url() -> &'static str {
+        text("skills_repo_invalid_url")
+    }
+
+    pub fn skills_repo_added() -> &'static str {
+        text("skills_repo_added")
+    }
+
+    pub fn skills_repo_removed() -> &'static str {
+        text("skills_repo_removed")
     }
 
     pub fn provider_management() -> &'static str {
@@ -689,6 +832,10 @@ pub mod texts {
         text("config_gemini_header")
     }
 
+    pub fn config_opencode_header() -> &'static str {
+        text("config_opencode_header")
+    }
+
     pub fn auth_type_label() -> &'static str {
         text("auth_type_label")
     }
@@ -715,6 +862,46 @@ pub mod texts {
 
     pub fn gemini_base_url_placeholder() -> &'static str {
         text("gemini_base_url_placeholder")
+    }
+
+    pub fn opencode_npm_label() -> &'static str {
+        text("opencode_npm_label")
+    }
+
+    pub fn opencode_npm_help() -> &'static str {
+        text("opencode_npm_help")
+    }
+
+    pub fn opencode_npm_required_error() -> &'static str {
+        text("opencode_npm_required_error")
+    }
+
+    pub fn opencode_base_url_label() -> &'static str {
+        text("opencode_base_url_label")
+    }
+
+    pub fn opencode_base_url_help() -> &'static str {
+        text("opencode_base_url_help")
+    }
+
+    pub fn opencode_api_key_label() -> &'static str {
+        text("opencode_api_key_label")
+    }
+
+    pub fn opencode_api_key_help() -> &'static str {
+        text("opencode_api_key_help")
+    }
+
+    pub fn opencode_models_label() -> &'static str {
+        text("opencode_models_label")
+    }
+
+    pub fn opencode_models_help() -> &'static str {
+        text("opencode_models_help")
+    }
+
+    pub fn opencode_models_count_label() -> &'static str {
+        text("opencode_models_count_label")
     }
 
     pub fn adc_project_id_label() -> &'static str {
@@ -1409,6 +1596,18 @@ pub mod texts {
 
     pub fn speedtest_endpoint() -> &'static str {
         text("speedtest_endpoint")
+    }
+
+    pub fn opencode_additive_mode_notice() -> &'static str {
+        text("opencode_additive_mode_notice")
+    }
+
+    pub fn opencode_no_current_provider() -> &'static str {
+        text("opencode_no_current_provider")
+    }
+
+    pub fn opencode_switch_not_supported() -> &'static str {
+        text("opencode_switch_not_supported")
     }
 
     pub fn back() -> &'static str {

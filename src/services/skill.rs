@@ -7,6 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tokio::time::timeout;
 
+use crate::app_config::AppType;
 use crate::error::format_skill_error;
 
 /// 技能对象
@@ -39,6 +40,36 @@ pub struct Skill {
     pub skills_path: Option<String>,
 }
 
+impl Skill {
+    pub fn matches_query(&self, query: &str) -> bool {
+        let q = query.trim().to_lowercase();
+        if q.is_empty() {
+            return true;
+        }
+
+        let mut haystacks = vec![
+            self.name.as_str(),
+            self.description.as_str(),
+            self.directory.as_str(),
+            self.key.as_str(),
+        ];
+
+        if let Some(owner) = self.repo_owner.as_deref() {
+            haystacks.push(owner);
+        }
+        if let Some(name) = self.repo_name.as_deref() {
+            haystacks.push(name);
+        }
+        if let Some(url) = self.readme_url.as_deref() {
+            haystacks.push(url);
+        }
+
+        haystacks
+            .iter()
+            .any(|value| value.to_lowercase().contains(&q))
+    }
+}
+
 /// 仓库配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SkillRepo {
@@ -63,6 +94,56 @@ pub struct SkillState {
     /// 安装时间
     #[serde(rename = "installedAt")]
     pub installed_at: DateTime<Utc>,
+    /// 启用的应用列表
+    #[serde(default)]
+    pub apps: SkillApps,
+}
+
+/// Skill 应用启用状态（标记 Skill 应用到哪些客户端）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillApps {
+    #[serde(default)]
+    pub claude: bool,
+    #[serde(default)]
+    pub codex: bool,
+    #[serde(default)]
+    pub gemini: bool,
+    #[serde(default)]
+    pub opencode: bool,
+}
+
+impl SkillApps {
+    pub fn enabled_apps(&self) -> Vec<AppType> {
+        let mut apps = Vec::new();
+        if self.claude {
+            apps.push(AppType::Claude);
+        }
+        if self.codex {
+            apps.push(AppType::Codex);
+        }
+        if self.gemini {
+            apps.push(AppType::Gemini);
+        }
+        if self.opencode {
+            apps.push(AppType::OpenCode);
+        }
+        apps
+    }
+
+    pub fn set_all_enabled() -> Self {
+        Self {
+            claude: true,
+            codex: true,
+            gemini: true,
+            opencode: true,
+        }
+    }
+}
+
+impl Default for SkillApps {
+    fn default() -> Self {
+        Self::set_all_enabled()
+    }
 }
 
 /// 持久化存储结构
@@ -135,12 +216,78 @@ impl SkillService {
     }
 
     fn get_install_dir() -> Result<PathBuf> {
+        Ok(crate::config::get_app_config_dir().join("skills"))
+    }
+
+    fn get_app_skills_dir(app: &AppType) -> Result<PathBuf> {
+        match app {
+            AppType::Claude => {
+                if let Some(custom) = crate::settings::get_claude_override_dir() {
+                    return Ok(custom.join("skills"));
+                }
+            }
+            AppType::Codex => {
+                if let Some(custom) = crate::settings::get_codex_override_dir() {
+                    return Ok(custom.join("skills"));
+                }
+            }
+            AppType::Gemini => {
+                if let Some(custom) = crate::settings::get_gemini_override_dir() {
+                    return Ok(custom.join("skills"));
+                }
+            }
+            AppType::OpenCode => {
+                if let Some(custom) = crate::settings::get_opencode_override_dir() {
+                    return Ok(custom.join("skills"));
+                }
+            }
+        }
+
         let home = dirs::home_dir().context(format_skill_error(
             "GET_HOME_DIR_FAILED",
             &[],
             Some("checkPermission"),
         ))?;
-        Ok(home.join(".claude").join("skills"))
+
+        Ok(match app {
+            AppType::Claude => home.join(".claude").join("skills"),
+            AppType::Codex => home.join(".codex").join("skills"),
+            AppType::Gemini => home.join(".gemini").join("skills"),
+            AppType::OpenCode => home.join(".config").join("opencode").join("skills"),
+        })
+    }
+
+    pub fn sync_skill_to_apps(&self, directory: &str, apps: &SkillApps) -> Result<()> {
+        let source = self.install_dir.join(directory);
+        if !source.exists() {
+            return Err(anyhow!(format_skill_error(
+                "SKILL_DIR_NOT_FOUND",
+                &[("path", &source.display().to_string())],
+                Some("checkRepoUrl"),
+            )));
+        }
+
+        for app in apps.enabled_apps() {
+            let target_dir = Self::get_app_skills_dir(&app)?;
+            let dest = target_dir.join(directory);
+            if dest.exists() {
+                fs::remove_dir_all(&dest)?;
+            }
+            Self::copy_dir_recursive(&source, &dest)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn remove_skill_from_apps(&self, directory: &str, apps: &SkillApps) -> Result<()> {
+        for app in apps.enabled_apps() {
+            let target_dir = Self::get_app_skills_dir(&app)?;
+            let dest = target_dir.join(directory);
+            if dest.exists() {
+                fs::remove_dir_all(&dest)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -293,47 +440,73 @@ impl SkillService {
 
     /// 合并本地技能
     fn merge_local_skills(&self, skills: &mut Vec<Skill>) -> Result<()> {
-        if !self.install_dir.exists() {
+        let mut local_dirs = Vec::new();
+        if self.install_dir.exists() {
+            local_dirs.push(self.install_dir.clone());
+        }
+
+        for app in [
+            AppType::Claude,
+            AppType::Codex,
+            AppType::Gemini,
+            AppType::OpenCode,
+        ] {
+            if let Ok(dir) = Self::get_app_skills_dir(&app) {
+                if dir != self.install_dir && dir.exists() {
+                    local_dirs.push(dir);
+                }
+            }
+        }
+
+        if local_dirs.is_empty() {
             return Ok(());
         }
 
-        for entry in fs::read_dir(&self.install_dir)? {
-            let entry = entry?;
-            let path = entry.path();
-
-            if !path.is_dir() {
+        let mut seen_dirs = HashMap::new();
+        for dir in local_dirs {
+            let dir_key = dir.to_string_lossy().to_string();
+            if seen_dirs.insert(dir_key, true).is_some() {
                 continue;
             }
 
-            let directory = path.file_name().unwrap().to_string_lossy().to_string();
+            for entry in fs::read_dir(&dir)? {
+                let entry = entry?;
+                let path = entry.path();
 
-            // 更新已安装状态
-            let mut found = false;
-            for skill in skills.iter_mut() {
-                if skill.directory.eq_ignore_ascii_case(&directory) {
-                    skill.installed = true;
-                    found = true;
-                    break;
+                if !path.is_dir() {
+                    continue;
                 }
-            }
 
-            // 添加本地独有的技能（仅当在仓库中未找到时）
-            if !found {
-                let skill_md = path.join("SKILL.md");
-                if skill_md.exists() {
-                    if let Ok(meta) = self.parse_skill_metadata(&skill_md) {
-                        skills.push(Skill {
-                            key: format!("local:{directory}"),
-                            name: meta.name.unwrap_or_else(|| directory.clone()),
-                            description: meta.description.unwrap_or_default(),
-                            directory: directory.clone(),
-                            readme_url: None,
-                            installed: true,
-                            repo_owner: None,
-                            repo_name: None,
-                            repo_branch: None,
-                            skills_path: None,
-                        });
+                let directory = path.file_name().unwrap().to_string_lossy().to_string();
+
+                // 更新已安装状态
+                let mut found = false;
+                for skill in skills.iter_mut() {
+                    if skill.directory.eq_ignore_ascii_case(&directory) {
+                        skill.installed = true;
+                        found = true;
+                        break;
+                    }
+                }
+
+                // 添加本地独有的技能（仅当在仓库中未找到时）
+                if !found {
+                    let skill_md = path.join("SKILL.md");
+                    if skill_md.exists() {
+                        if let Ok(meta) = self.parse_skill_metadata(&skill_md) {
+                            skills.push(Skill {
+                                key: format!("local:{directory}"),
+                                name: meta.name.unwrap_or_else(|| directory.clone()),
+                                description: meta.description.unwrap_or_default(),
+                                directory: directory.clone(),
+                                readme_url: None,
+                                installed: true,
+                                repo_owner: None,
+                                repo_name: None,
+                                repo_branch: None,
+                                skills_path: None,
+                            });
+                        }
                     }
                 }
             }

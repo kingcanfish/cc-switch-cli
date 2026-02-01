@@ -103,8 +103,7 @@ pub fn extract_version_from_output(output: &str) -> Result<(String, Version), Ap
 }
 
 fn extract_version_token(output: &str) -> Option<String> {
-    let re =
-        regex::Regex::new(r"v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?").ok()?;
+    let re = regex::Regex::new(r"v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?").ok()?;
     re.find(output).map(|m| m.as_str().to_string())
 }
 

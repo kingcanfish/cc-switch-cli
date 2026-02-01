@@ -11,5 +11,6 @@ pub use mcp::McpService;
 pub use prompt::PromptService;
 pub use provider::ProviderService;
 pub mod self_update;
+pub use skill::SkillApps;
 pub use skill::SkillService;
 pub use speedtest::{EndpointLatency, SpeedtestService};

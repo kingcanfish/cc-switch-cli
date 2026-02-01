@@ -3,6 +3,7 @@ mod app_config;
 mod config;
 mod error;
 mod mcp;
+mod opencode_config;
 mod prompt;
 mod prompt_files;
 mod provider;
@@ -24,8 +25,8 @@ pub use error::AppError;
 pub use mcp::{import_from, remove_server_from, sync_enabled_to, sync_single_server_to};
 pub use provider::{Provider, ProviderMeta};
 pub use services::{
-    ConfigService, EndpointLatency, McpService, PromptService, ProviderService, SkillService,
-    SpeedtestService,
+    ConfigService, EndpointLatency, McpService, PromptService, ProviderService, SkillApps,
+    SkillService, SpeedtestService,
 };
 pub use settings::{update_settings, AppSettings};
 pub use store::AppState;

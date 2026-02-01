@@ -119,12 +119,20 @@ fn list_providers(app_type: AppType) -> Result<(), AppError> {
 
     println!("{}", table);
     println!("\n{} Application: {}", info("ℹ"), app_str);
-    println!("{} Current: {}", info("→"), highlight(&current_id));
+    if matches!(app_type, AppType::OpenCode) {
+        println!("{}", info(texts::opencode_additive_mode_notice()));
+    } else {
+        println!("{} Current: {}", info("→"), highlight(&current_id));
+    }
 
     Ok(())
 }
 
 fn show_current(app_type: AppType) -> Result<(), AppError> {
+    if matches!(app_type, AppType::OpenCode) {
+        println!("{}", info(texts::opencode_no_current_provider()));
+        return Ok(());
+    }
     let state = get_state()?;
     let current_id = ProviderService::current(&state, app_type.clone())?;
     let providers = ProviderService::list(&state, app_type.clone())?;
@@ -198,6 +206,11 @@ fn show_current(app_type: AppType) -> Result<(), AppError> {
 }
 
 fn switch_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
+    if matches!(app_type, AppType::OpenCode) {
+        return Err(AppError::Message(
+            texts::opencode_switch_not_supported().to_string(),
+        ));
+    }
     let state = get_state()?;
     let app_str = app_type.as_str().to_string();
 
@@ -224,12 +237,14 @@ fn delete_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
     let state = get_state()?;
 
     // 检查是否是当前 provider
-    let current_id = ProviderService::current(&state, app_type.clone())?;
-    if id == current_id {
-        return Err(AppError::Message(
-            "Cannot delete the current active provider. Please switch to another provider first."
-                .to_string(),
-        ));
+    if !matches!(app_type, AppType::OpenCode) {
+        let current_id = ProviderService::current(&state, app_type.clone())?;
+        if id == current_id {
+            return Err(AppError::Message(
+                "Cannot delete the current active provider. Please switch to another provider first."
+                    .to_string(),
+            ));
+        }
     }
 
     // 确认删除
@@ -375,6 +390,7 @@ mod tests {
         assert!(supports_official_provider(&AppType::Codex));
         assert!(!supports_official_provider(&AppType::Claude));
         assert!(!supports_official_provider(&AppType::Gemini));
+        assert!(!supports_official_provider(&AppType::OpenCode));
     }
 }
 
@@ -570,6 +586,11 @@ fn extract_api_url(settings_config: &serde_json::Value, app_type: &AppType) -> O
             .get("env")?
             .get("GEMINI_BASE_URL")
             .or_else(|| settings_config.get("env")?.get("BASE_URL"))?
+            .as_str()
+            .map(|s| s.to_string()),
+        AppType::OpenCode => settings_config
+            .get("options")?
+            .get("baseURL")?
             .as_str()
             .map(|s| s.to_string()),
     }
