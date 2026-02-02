@@ -17,9 +17,6 @@ confirm:
   reset: "确定要重置配置吗？这将删除所有自定义设置。"
   restore: "确定要从备份恢复配置吗？"
 
-update:
-  homebrew_hint: "检测到通过 Homebrew 安装，请使用 Homebrew 更新：brew upgrade cc-switch-cli。"
-
 select:
   to_delete_entity: "选择要删除的{entity_type}："
   provider_add_mode: "请选择供应商类型："
@@ -530,6 +527,8 @@ update:
   checking: "正在检查更新..."
   current_version: "当前版本：{version}"
   latest_version: "最新版本：{version}"
+  fetch_failed: "检查更新失败：{error}\n建议：检查网络或代理（HTTPS_PROXY/HTTP_PROXY），或稍后重试。"
+  homebrew_hint: "检测到通过 Homebrew 安装，请使用 Homebrew 更新：brew upgrade cc-switch-cli。"
   detected_os: "检测到的系统：{os}"
   detected_arch: "检测到的架构：{arch}"
   up_to_date: "当前已是最新版本。"

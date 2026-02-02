@@ -41,7 +41,15 @@ pub fn execute() -> Result<(), AppError> {
         let service = SelfUpdateService::new()?;
         println!("{}", info(texts::text("update_checking")));
 
-        let release = service.fetch_latest_release().await?;
+        let release = match service.fetch_latest_release().await {
+            Ok(release) => release,
+            Err(err) => {
+                return Err(AppError::Message(texts::text_with_args(
+                    "update_fetch_failed",
+                    &[("error", &err.to_string())],
+                )));
+            }
+        };
         let latest_version = Version::parse(&release.tag_name)?;
 
         println!(

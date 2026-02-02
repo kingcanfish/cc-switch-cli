@@ -17,9 +17,6 @@ confirm:
   reset: "Are you sure you want to reset? This will delete all custom settings."
   restore: "Are you sure you want to restore from backup?"
 
-update:
-  homebrew_hint: "Detected Homebrew installation. Please update via Homebrew: brew upgrade cc-switch-cli."
-
 select:
   to_delete_entity: "Select {entity_type} to delete:"
   provider_add_mode: "Select provider type:"
@@ -530,6 +527,8 @@ update:
   checking: "Checking for updates..."
   current_version: "Current version: {version}"
   latest_version: "Latest version: {version}"
+  fetch_failed: "Failed to check updates: {error}\nTips: check your network or proxy (HTTPS_PROXY/HTTP_PROXY), or try again later."
+  homebrew_hint: "Detected Homebrew installation. Please update via Homebrew: brew upgrade cc-switch-cli."
   detected_os: "Detected OS: {os}"
   detected_arch: "Detected architecture: {arch}"
   up_to_date: "You're already on the latest version."

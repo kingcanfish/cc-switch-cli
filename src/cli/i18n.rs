@@ -205,6 +205,18 @@ mod tests {
             "Hello"
         );
     }
+
+    #[test]
+    fn locale_en_yaml_is_valid() {
+        let yaml = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/locales/en.yaml"));
+        load_locale(yaml);
+    }
+
+    #[test]
+    fn locale_zh_yaml_is_valid() {
+        let yaml = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/locales/zh.yaml"));
+        load_locale(yaml);
+    }
 }
 
 // ============================================================================
