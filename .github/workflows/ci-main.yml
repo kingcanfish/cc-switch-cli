@@ -41,3 +41,4 @@ jobs:
     permissions:
       contents: write
     uses: ./.github/workflows/auto-tag.yml
+    secrets: inherit
