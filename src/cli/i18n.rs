@@ -321,6 +321,30 @@ pub mod texts {
         text("main_menu_no_matches")
     }
 
+    pub fn tui_list_help() -> &'static str {
+        text("tui_list_help")
+    }
+
+    pub fn tui_text_help() -> &'static str {
+        text("tui_text_help")
+    }
+
+    pub fn tui_confirm_help() -> &'static str {
+        text("tui_confirm_help")
+    }
+
+    pub fn tui_empty_list() -> &'static str {
+        text("tui_empty_list")
+    }
+
+    pub fn tui_yes() -> &'static str {
+        text("tui_yes")
+    }
+
+    pub fn tui_no() -> &'static str {
+        text("tui_no")
+    }
+
     pub fn menu_manage_providers() -> &'static str {
         text("menu_manage_providers")
     }
@@ -399,6 +423,18 @@ pub mod texts {
 
     pub fn skills_none_found() -> &'static str {
         text("skills_none_found")
+    }
+
+    pub fn skills_loading() -> &'static str {
+        text("skills_loading")
+    }
+
+    pub fn skills_fetch_timeout() -> &'static str {
+        text("skills_fetch_timeout")
+    }
+
+    pub fn skills_showing_local_only() -> &'static str {
+        text("skills_showing_local_only")
     }
 
     pub fn skills_search_prompt() -> &'static str {
@@ -665,6 +701,26 @@ pub mod texts {
         text("current_provider_synced_warning")
     }
 
+    pub fn no_current_provider() -> &'static str {
+        text("no_current_provider")
+    }
+
+    pub fn syncing_to_live_config() -> &'static str {
+        text("syncing_to_live_config")
+    }
+
+    pub fn synced_live_config() -> &'static str {
+        text("synced_live_config")
+    }
+
+    pub fn synced_opencode_live_config() -> &'static str {
+        text("synced_opencode_live_config")
+    }
+
+    pub fn invalid_toml_syntax() -> &'static str {
+        text("invalid_toml_syntax")
+    }
+
     pub fn input_failed_error(err: &str) -> String {
         text_with_args("input_failed_error", &[("err", err)])
     }
@@ -809,6 +865,14 @@ pub mod texts {
         text("codex_openai_auth_info")
     }
 
+    pub fn codex_base_url_help() -> &'static str {
+        text("codex_base_url_help")
+    }
+
+    pub fn codex_model_help() -> &'static str {
+        text("codex_model_help")
+    }
+
     pub fn codex_dual_write_info(env_key: &str, _api_key: &str) -> String {
         text_with_args(
             "codex_dual_write_info",
@@ -914,6 +978,10 @@ pub mod texts {
 
     pub fn opencode_models_count_label() -> &'static str {
         text("opencode_models_count_label")
+    }
+
+    pub fn npm_display_label() -> &'static str {
+        text("npm_display_label")
     }
 
     pub fn adc_project_id_label() -> &'static str {
@@ -1059,6 +1127,14 @@ pub mod texts {
 
     pub fn api_url_label_colon() -> &'static str {
         text("api_url_label_colon")
+    }
+
+    pub fn endpoint_label_colon() -> &'static str {
+        text("endpoint_label_colon")
+    }
+
+    pub fn no_api_url_configured() -> &'static str {
+        text("no_api_url_configured")
     }
 
     pub fn summary_divider() -> &'static str {
@@ -1477,6 +1553,54 @@ pub mod texts {
         text_with_args("backup_created", &[("id", id)])
     }
 
+    pub fn backup_use_custom_name_confirm() -> &'static str {
+        text("backup_use_custom_name_confirm")
+    }
+
+    pub fn backup_name_prompt() -> &'static str {
+        text("backup_name_prompt")
+    }
+
+    pub fn backup_name_help() -> &'static str {
+        text("backup_name_help")
+    }
+
+    pub fn backup_location(path: &str) -> String {
+        text_with_args("backup_location", &[("path", path)])
+    }
+
+    pub fn no_backups_available() -> &'static str {
+        text("restore_no_backups_available")
+    }
+
+    pub fn backups_create_hint() -> &'static str {
+        text("restore_create_backup_hint")
+    }
+
+    pub fn select_backup_to_restore() -> &'static str {
+        text("restore_select_backup")
+    }
+
+    pub fn invalid_backup_selection() -> &'static str {
+        text("restore_invalid_selection")
+    }
+
+    pub fn restore_warning_title() -> &'static str {
+        text("restore_warning_title")
+    }
+
+    pub fn restore_warning_replace_current() -> &'static str {
+        text("restore_warning_replace_current")
+    }
+
+    pub fn restore_warning_auto_backup() -> &'static str {
+        text("restore_warning_auto_backup")
+    }
+
+    pub fn restore_pre_backup_created(id: &str) -> String {
+        text_with_args("restore_pre_backup_created", &[("id", id)])
+    }
+
     pub fn restored_from(path: &str) -> String {
         text_with_args("restored_from", &[("path", path)])
     }
@@ -1608,6 +1732,46 @@ pub mod texts {
 
     pub fn speedtest_endpoint() -> &'static str {
         text("speedtest_endpoint")
+    }
+
+    pub fn duplicating_provider(id: &str) -> String {
+        text_with_args("duplicating_provider", &[("id", id)])
+    }
+
+    pub fn provider_duplication_not_implemented() -> &'static str {
+        text("provider_duplication_not_implemented")
+    }
+
+    pub fn testing_provider(name: &str) -> String {
+        text_with_args("testing_provider", &[("name", name)])
+    }
+
+    pub fn speedtest_failed() -> &'static str {
+        text("speedtest_failed")
+    }
+
+    pub fn speedtest_timeout() -> &'static str {
+        text("speedtest_timeout")
+    }
+
+    pub fn speedtest_completed_success() -> &'static str {
+        text("speedtest_completed_success")
+    }
+
+    pub fn latency_label() -> &'static str {
+        text("latency_label")
+    }
+
+    pub fn status_label() -> &'static str {
+        text("status_label")
+    }
+
+    pub fn not_applicable() -> &'static str {
+        text("not_applicable")
+    }
+
+    pub fn async_runtime_create_failed(err: &str) -> String {
+        text_with_args("async_runtime_create_failed", &[("err", err)])
     }
 
     pub fn opencode_additive_mode_notice() -> &'static str {

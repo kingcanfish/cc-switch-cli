@@ -1,39 +1,36 @@
-use inquire::{Confirm, Text};
 use std::path::Path;
 
 use crate::app_config::{AppType, MultiAppConfig};
 use crate::cli::i18n::texts;
-use crate::cli::ui::{error, highlight, info, success};
+use crate::cli::tui::theme::accent_color;
+use crate::cli::tui::TextViewScreen;
+use crate::cli::ui::current_tui_app;
 use crate::config::get_app_config_path;
 use crate::error::AppError;
 use crate::services::ConfigService;
 use crate::services::ProviderService;
 
 use super::utils::{
-    clear_screen, get_state, handle_inquire, pause, prompt_confirm, prompt_select, prompt_text,
-    prompt_text_with_default,
+    get_state, prompt_confirm, prompt_select, prompt_text, prompt_text_with_default,
+    prompt_text_with_help, run_tui_screen, run_with_tui_loading, run_with_tui_suspended,
 };
 
 pub fn manage_config_menu(app_type: &AppType) -> Result<(), AppError> {
     loop {
-        clear_screen();
-        println!("\n{}", highlight(texts::config_management()));
-        println!("{}", "─".repeat(60));
-
         let choices = vec![
-            texts::config_show_path(),
-            texts::config_show_full(),
-            texts::config_export(),
-            texts::config_import(),
-            texts::config_backup(),
-            texts::config_restore(),
-            texts::config_validate(),
-            texts::config_common_snippet(),
-            texts::config_reset(),
-            texts::back_to_main(),
+            texts::config_show_path().to_string(),
+            texts::config_show_full().to_string(),
+            texts::config_export().to_string(),
+            texts::config_import().to_string(),
+            texts::config_backup().to_string(),
+            texts::config_restore().to_string(),
+            texts::config_validate().to_string(),
+            texts::config_common_snippet().to_string(),
+            texts::config_reset().to_string(),
+            texts::back_to_main().to_string(),
         ];
 
-        let Some(choice) = prompt_select(texts::choose_action(), choices)? else {
+        let Some(choice) = prompt_select(texts::config_management(), choices)? else {
             break;
         };
 
@@ -72,17 +69,6 @@ pub fn manage_config_menu(app_type: &AppType) -> Result<(), AppError> {
 }
 
 fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppError> {
-    clear_screen();
-    println!(
-        "\n{}",
-        highlight(
-            texts::config_common_snippet()
-                .trim_start_matches("🧩 ")
-                .trim()
-        )
-    );
-    println!("{}", "─".repeat(60));
-
     let state = get_state()?;
     let current = {
         let cfg = state.config.read()?;
@@ -96,29 +82,20 @@ fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppE
         current
     };
 
-    let field_name = format!("common_config_snippet.{}", app_type.as_str());
-
     loop {
-        println!(
-            "\n{}",
-            info(&format!(
-                "{} ({})",
-                texts::opening_external_editor(),
-                field_name
-            ))
-        );
-
         let edited = match open_external_editor(&initial) {
             Ok(content) => content,
             Err(e) => {
-                println!("\n{}", error(&format!("{}", e)));
+                tui_show_text(texts::config_common_snippet(), vec![e.to_string()])?;
                 return Ok(());
             }
         };
 
-        // Check if content was changed
         if edited.trim() == initial.trim() {
-            println!("\n{}", info(texts::no_changes_detected()));
+            tui_show_text(
+                texts::config_common_snippet(),
+                vec![texts::no_changes_detected().to_string()],
+            )?;
             return Ok(());
         }
 
@@ -129,10 +106,10 @@ fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppE
             let value: serde_json::Value = match serde_json::from_str(&edited) {
                 Ok(v) => v,
                 Err(e) => {
-                    println!(
-                        "\n{}",
-                        error(&format!("{}: {}", texts::invalid_json_syntax(), e))
-                    );
+                    tui_show_text(
+                        texts::config_common_snippet(),
+                        vec![format!("{}: {}", texts::invalid_json_syntax(), e)],
+                    )?;
                     if !retry_prompt()? {
                         return Ok(());
                     }
@@ -141,7 +118,10 @@ fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppE
             };
 
             if !value.is_object() {
-                println!("\n{}", error(texts::common_config_snippet_not_object()));
+                tui_show_text(
+                    texts::config_common_snippet(),
+                    vec![texts::common_config_snippet_not_object().to_string()],
+                )?;
                 if !retry_prompt()? {
                     return Ok(());
                 }
@@ -151,16 +131,18 @@ fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppE
             let pretty = serde_json::to_string_pretty(&value)
                 .map_err(|e| AppError::Message(format!("Failed to serialize JSON: {}", e)))?;
 
-            println!("\n{}", highlight(texts::config_common_snippet()));
-            println!("{}", "─".repeat(60));
-            println!("{}", pretty);
+            let lines = pretty.lines().map(|line| line.to_string()).collect();
+            tui_show_text(texts::config_common_snippet(), lines)?;
 
             let Some(confirm) = prompt_confirm(texts::confirm_save_changes(), false)? else {
                 return Ok(());
             };
 
             if !confirm {
-                println!("\n{}", info(texts::cancelled()));
+                tui_show_text(
+                    texts::config_common_snippet(),
+                    vec![texts::cancelled().to_string()],
+                )?;
                 return Ok(());
             }
 
@@ -173,8 +155,10 @@ fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppE
         }
         state.save()?;
 
-        println!("\n{}", success(action_label));
-
+        tui_show_text(
+            texts::config_common_snippet(),
+            vec![action_label.to_string()],
+        )?;
         break;
     }
 
@@ -184,25 +168,51 @@ fn edit_common_config_snippet_interactive(app_type: &AppType) -> Result<(), AppE
 
     if apply {
         if matches!(app_type, AppType::OpenCode) {
-            ProviderService::sync_opencode_to_live(&state)?;
-            println!("{}", success(texts::common_config_snippet_applied()));
+            run_with_tui_loading(
+                texts::config_common_snippet(),
+                texts::syncing_to_live_config(),
+                texts::cancelled(),
+                move || {
+                    let state = get_state()?;
+                    ProviderService::sync_opencode_to_live(&state)
+                },
+            )?;
+            tui_show_text(
+                texts::config_common_snippet(),
+                vec![texts::common_config_snippet_applied().to_string()],
+            )?;
         } else {
             let current_id = ProviderService::current(&state, app_type.clone())?;
             if current_id.trim().is_empty() {
-                println!(
-                    "{}",
-                    info(texts::common_config_snippet_no_current_provider())
-                );
+                tui_show_text(
+                    texts::config_common_snippet(),
+                    vec![texts::common_config_snippet_no_current_provider().to_string()],
+                )?;
             } else {
-                ProviderService::switch(&state, app_type.clone(), &current_id)?;
-                println!("{}", success(texts::common_config_snippet_applied()));
+                let app = app_type.clone();
+                let current_id_owned = current_id.clone();
+                run_with_tui_loading(
+                    texts::config_common_snippet(),
+                    texts::syncing_to_live_config(),
+                    texts::cancelled(),
+                    move || {
+                        let state = get_state()?;
+                        ProviderService::switch(&state, app, &current_id_owned)
+                    },
+                )?;
+                tui_show_text(
+                    texts::config_common_snippet(),
+                    vec![texts::common_config_snippet_applied().to_string()],
+                )?;
             }
         }
     } else {
-        println!("{}", info(texts::common_config_snippet_apply_hint()));
+        tui_show_text(
+            texts::config_common_snippet(),
+            vec![texts::common_config_snippet_apply_hint().to_string()],
+        )?;
     }
 
-    pause();
     Ok(())
 }
 
@@ -211,62 +221,63 @@ fn retry_prompt() -> Result<bool, AppError> {
 }
 
 fn open_external_editor(initial_content: &str) -> Result<String, AppError> {
-    edit::edit(initial_content)
-        .map_err(|e| AppError::Message(format!("{}: {}", texts::editor_failed(), e)))
+    run_with_tui_suspended(|| {
+        edit::edit(initial_content)
+            .map_err(|e| AppError::Message(format!("{}: {}", texts::editor_failed(), e)))
+    })
+}
+
+fn tui_show_text(title: &str, lines: Vec<String>) -> Result<(), AppError> {
+    let accent = current_tui_app()
+        .map(|app| accent_color(&app))
+        .unwrap_or(ratatui::style::Color::Blue);
+    let mut screen = TextViewScreen::new(title, lines, texts::press_enter(), accent);
+    run_tui_screen(title, &mut screen)?;
+    Ok(())
 }
 
 fn show_config_path_interactive() -> Result<(), AppError> {
-    clear_screen();
     let config_path = get_app_config_path();
     let config_dir = config_path.parent().unwrap_or(&config_path);
 
-    println!(
-        "\n{}",
-        highlight(texts::config_show_path().trim_start_matches("📍 "))
-    );
-    println!("{}", "─".repeat(60));
-    println!("Config file: {}", config_path.display());
-    println!("Config dir:  {}", config_dir.display());
+    let mut lines = vec![
+        format!("Config file: {}", config_path.display()),
+        format!("Config dir:  {}", config_dir.display()),
+    ];
 
     if config_path.exists() {
         if let Ok(metadata) = std::fs::metadata(&config_path) {
-            println!("File size:   {} bytes", metadata.len());
+            lines.push(format!("File size:   {} bytes", metadata.len()));
         }
     } else {
-        println!("Status:      File does not exist");
+        lines.push("Status:      File does not exist".to_string());
     }
 
     let backup_dir = config_dir.join("backups");
     if backup_dir.exists() {
         if let Ok(entries) = std::fs::read_dir(&backup_dir) {
             let count = entries.filter(|e| e.is_ok()).count();
-            println!("Backups:     {} files in {}", count, backup_dir.display());
+            lines.push(format!(
+                "Backups:     {} files in {}",
+                count,
+                backup_dir.display()
+            ));
         }
     }
 
-    pause();
-    Ok(())
+    tui_show_text(texts::config_show_path().trim_start_matches("📍 "), lines)
 }
 
 fn show_full_config_interactive() -> Result<(), AppError> {
-    clear_screen();
     let config = MultiAppConfig::load()?;
     let json = serde_json::to_string_pretty(&config)
         .map_err(|e| AppError::Message(format!("Failed to serialize config: {}", e)))?;
 
-    println!(
-        "\n{}",
-        highlight(texts::config_show_full().trim_start_matches("👁️ "))
-    );
-    println!("{}", "─".repeat(60));
-    println!("{}", json);
-
-    pause();
-    Ok(())
+    let lines = json.lines().map(|line| line.to_string()).collect();
+    tui_show_text(texts::config_show_full().trim_start_matches("👁️ "), lines)
 }
 
 fn export_config_interactive(path: &str) -> Result<(), AppError> {
-    clear_screen();
     let target_path = Path::new(path);
 
     if target_path.exists() {
@@ -276,21 +287,30 @@ fn export_config_interactive(path: &str) -> Result<(), AppError> {
         };
 
         if !confirm {
-            println!("\n{}", info(texts::cancelled()));
-            pause();
+            tui_show_text(texts::config_export(), vec![texts::cancelled().to_string()])?;
             return Ok(());
         }
     }
 
-    ConfigService::export_config_to_path(target_path)?;
+    let export_path = path.to_string();
+    run_with_tui_loading(
+        texts::config_export(),
+        texts::config_export(),
+        texts::cancelled(),
+        move || {
+            let target_path = Path::new(&export_path);
+            ConfigService::export_config_to_path(target_path)
+        },
+    )?;
 
-    println!("\n{}", success(&texts::exported_to(path)));
-    pause();
+    tui_show_text(
+        texts::config_export(),
+        vec![texts::exported_to(path).to_string()],
+    )?;
     Ok(())
 }
 
 fn import_config_interactive(path: &str) -> Result<(), AppError> {
-    clear_screen();
     let file_path = Path::new(path);
 
     if !file_path.exists() {
@@ -302,45 +322,41 @@ fn import_config_interactive(path: &str) -> Result<(), AppError> {
     };
 
     if !confirm {
-        println!("\n{}", info(texts::cancelled()));
-        pause();
+        tui_show_text(texts::config_import(), vec![texts::cancelled().to_string()])?;
         return Ok(());
     }
 
-    let state = get_state()?;
-    let backup_id = ConfigService::import_config_from_path(file_path, &state)?;
+    let import_path = path.to_string();
+    let backup_id = run_with_tui_loading(
+        texts::config_import(),
+        texts::config_import(),
+        texts::cancelled(),
+        move || {
+            let state = get_state()?;
+            let file_path = Path::new(&import_path);
+            ConfigService::import_config_from_path(file_path, &state)
+        },
+    )?;
 
-    println!("\n{}", success(&texts::imported_from(path)));
-    println!("{}", info(&format!("Backup created: {}", backup_id)));
-    pause();
+    tui_show_text(
+        texts::config_import(),
+        vec![
+            texts::imported_from(path).to_string(),
+            texts::backup_created(&backup_id),
+        ],
+    )?;
     Ok(())
 }
 
 fn backup_config_interactive() -> Result<(), AppError> {
-    clear_screen();
-    println!(
-        "\n{}",
-        highlight(texts::config_backup().trim_start_matches("💾 "))
-    );
-    println!("{}", "─".repeat(60));
-
-    // 询问是否使用自定义名称
-    let Some(use_custom_name) = handle_inquire(
-        Confirm::new("是否使用自定义备份名称？")
-            .with_default(false)
-            .with_help_message("自定义名称可以帮助您识别备份用途，如 'before-update'")
-            .prompt(),
-    )?
+    let Some(use_custom_name) = prompt_confirm(texts::backup_use_custom_name_confirm(), false)?
     else {
         return Ok(());
     };
 
     let custom_name = if use_custom_name {
-        let Some(input) = handle_inquire(
-            Text::new("请输入备份名称：")
-                .with_help_message("仅支持字母、数字、短横线和下划线")
-                .prompt(),
-        )?
+        let Some(input) =
+            prompt_text_with_help(texts::backup_name_prompt(), texts::backup_name_help())?
         else {
             return Ok(());
         };
@@ -356,101 +372,101 @@ fn backup_config_interactive() -> Result<(), AppError> {
     };
 
     let config_path = get_app_config_path();
-    let backup_id = ConfigService::create_backup(&config_path, custom_name)?;
+    let backup_id = run_with_tui_loading(
+        texts::config_backup(),
+        texts::config_backup(),
+        texts::cancelled(),
+        move || ConfigService::create_backup(&config_path, custom_name),
+    )?;
 
-    println!("\n{}", success(&texts::backup_created(&backup_id)));
-
-    // 显示备份文件完整路径
-    let backup_dir = config_path.parent().unwrap().join("backups");
+    let backup_dir = get_app_config_path().parent().unwrap().join("backups");
     let backup_file = backup_dir.join(format!("{}.json", backup_id));
-    println!("{}", info(&format!("位置: {}", backup_file.display())));
-
-    pause();
+    tui_show_text(
+        texts::config_backup(),
+        vec![
+            texts::backup_created(&backup_id).to_string(),
+            texts::backup_location(&backup_file.display().to_string()),
+        ],
+    )?;
     Ok(())
 }
 
 fn restore_config_interactive() -> Result<(), AppError> {
-    clear_screen();
-    println!(
-        "\n{}",
-        highlight(texts::config_restore().trim_start_matches("♻️ "))
-    );
-    println!("{}", "─".repeat(60));
-
-    // 获取备份列表
     let config_path = get_app_config_path();
-    let backups = ConfigService::list_backups(&config_path)?;
+    let backups = run_with_tui_loading(
+        texts::config_restore(),
+        texts::config_restore(),
+        texts::cancelled(),
+        move || ConfigService::list_backups(&config_path),
+    )?;
 
     if backups.is_empty() {
-        println!("\n{}", info("暂无可用备份"));
-        println!("{}", info("提示：使用 '💾 备份配置' 创建备份"));
-        pause();
+        tui_show_text(
+            texts::config_restore(),
+            vec![
+                texts::no_backups_available().to_string(),
+                texts::backups_create_hint().to_string(),
+            ],
+        )?;
         return Ok(());
     }
-
-    // 显示备份列表供选择
-    println!("\n找到 {} 个备份：", backups.len());
-    println!();
 
     let choices: Vec<String> = backups
         .iter()
         .map(|b| format!("{} - {}", b.display_name, b.id))
         .collect();
 
-    let Some(selection) = prompt_select("选择要恢复的备份：", choices)? else {
+    let Some(selection) = prompt_select(texts::select_backup_to_restore(), choices)? else {
         return Ok(());
     };
 
-    // 从选择中提取备份 ID
     let selected_backup = backups
         .iter()
         .find(|b| selection.contains(&b.id))
-        .ok_or_else(|| AppError::Message("无效的选择".to_string()))?;
+        .ok_or_else(|| AppError::Message(texts::invalid_backup_selection().to_string()))?;
 
-    println!();
-    println!("{}", highlight("警告："));
-    println!("这将使用所选备份替换当前配置");
-    println!("当前配置会先自动备份");
-    println!();
+    tui_show_text(
+        texts::restore_warning_title(),
+        vec![
+            texts::restore_warning_replace_current().to_string(),
+            texts::restore_warning_auto_backup().to_string(),
+        ],
+    )?;
 
-    let Some(confirm) = prompt_confirm("确认恢复？", false)? else {
+    let Some(confirm) = prompt_confirm(texts::confirm_restore(), false)? else {
         return Ok(());
     };
 
     if !confirm {
-        println!("\n{}", info(texts::cancelled()));
-        pause();
+        tui_show_text(
+            texts::config_restore(),
+            vec![texts::cancelled().to_string()],
+        )?;
         return Ok(());
     }
 
-    let state = get_state()?;
-    let pre_restore_backup = ConfigService::restore_from_backup_id(&selected_backup.id, &state)?;
+    let restore_id = selected_backup.id.clone();
+    let pre_restore_backup = run_with_tui_loading(
+        texts::config_restore(),
+        texts::config_restore(),
+        texts::cancelled(),
+        move || {
+            let state = get_state()?;
+            ConfigService::restore_from_backup_id(&restore_id, &state)
+        },
+    )?;
 
-    println!(
-        "\n{}",
-        success(&format!("✓ 已从备份恢复: {}", selected_backup.display_name))
-    );
+    let mut lines = vec![texts::restored_from(&selected_backup.display_name)];
     if !pre_restore_backup.is_empty() {
-        println!(
-            "{}",
-            info(&format!("  恢复前配置已备份: {}", pre_restore_backup))
-        );
+        lines.push(texts::restore_pre_backup_created(&pre_restore_backup));
     }
-    println!("\n{}", info("注意：重启 CLI 客户端以应用更改"));
-
-    pause();
+    lines.push(texts::restart_note().to_string());
+    tui_show_text(texts::config_restore(), lines)?;
     Ok(())
 }
 
 fn validate_config_interactive() -> Result<(), AppError> {
-    clear_screen();
     let config_path = get_app_config_path();
-
-    println!(
-        "\n{}",
-        highlight(texts::config_validate().trim_start_matches("✓ "))
-    );
-    println!("{}", "─".repeat(60));
 
     if !config_path.exists() {
         return Err(AppError::Message("Config file does not exist".to_string()));
@@ -464,9 +480,6 @@ fn validate_config_interactive() -> Result<(), AppError> {
 
     let config: MultiAppConfig = serde_json::from_str(&content)
         .map_err(|e| AppError::Message(format!("Invalid config structure: {}", e)))?;
-
-    println!("{}", success(texts::config_valid()));
-    println!();
 
     let claude_count = config
         .apps
@@ -490,44 +503,54 @@ fn validate_config_interactive() -> Result<(), AppError> {
         .unwrap_or(0);
     let mcp_count = config.mcp.servers.as_ref().map(|s| s.len()).unwrap_or(0);
 
-    println!("Claude providers: {}", claude_count);
-    println!("Codex providers:  {}", codex_count);
-    println!("Gemini providers: {}", gemini_count);
-    println!("OpenCode providers: {}", opencode_count);
-    println!("MCP servers:      {}", mcp_count);
-
-    pause();
+    tui_show_text(
+        texts::config_validate().trim_start_matches("✓ "),
+        vec![
+            texts::config_valid().to_string(),
+            format!("Claude providers: {}", claude_count),
+            format!("Codex providers:  {}", codex_count),
+            format!("Gemini providers: {}", gemini_count),
+            format!("OpenCode providers: {}", opencode_count),
+            format!("MCP servers:      {}", mcp_count),
+        ],
+    )?;
     Ok(())
 }
 
 fn reset_config_interactive() -> Result<(), AppError> {
-    clear_screen();
     let Some(confirm) = prompt_confirm(texts::confirm_reset(), false)? else {
         return Ok(());
     };
 
     if !confirm {
-        println!("\n{}", info(texts::cancelled()));
-        pause();
+        tui_show_text(texts::config_reset(), vec![texts::cancelled().to_string()])?;
         return Ok(());
     }
 
-    let config_path = get_app_config_path();
+    let backup_id = run_with_tui_loading(
+        texts::config_reset(),
+        texts::config_reset(),
+        texts::cancelled(),
+        move || {
+            let config_path = get_app_config_path();
+            let backup_id = ConfigService::create_backup(&config_path, None)?;
 
-    let backup_id = ConfigService::create_backup(&config_path, None)?;
+            if config_path.exists() {
+                std::fs::remove_file(&config_path)
+                    .map_err(|e| AppError::Message(format!("Failed to delete config: {}", e)))?;
+            }
 
-    if config_path.exists() {
-        std::fs::remove_file(&config_path)
-            .map_err(|e| AppError::Message(format!("Failed to delete config: {}", e)))?;
-    }
+            let _ = MultiAppConfig::load()?;
+            Ok(backup_id)
+        },
+    )?;
 
-    let _ = MultiAppConfig::load()?;
-
-    println!("\n{}", success(texts::config_reset_done()));
-    println!(
-        "{}",
-        info(&format!("Previous config backed up: {}", backup_id))
-    );
-    pause();
+    tui_show_text(
+        texts::config_reset(),
+        vec![
+            texts::config_reset_done().to_string(),
+            format!("Previous config backed up: {}", backup_id),
+        ],
+    )?;
     Ok(())
 }

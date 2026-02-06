@@ -2,27 +2,36 @@ use std::process::Command;
 
 use crate::app_config::AppType;
 use crate::cli::i18n::texts;
-use crate::cli::ui::{create_table, error, highlight, info, success};
+use crate::cli::tui::theme::accent_color;
+use crate::cli::tui::{ListScreen, TextViewScreen};
+use crate::cli::ui::create_table;
+use crate::cli::ui::current_tui_app;
 use crate::error::AppError;
 use crate::services::McpService;
 use crate::store::AppState;
 
 use super::utils::{
-    clear_screen, get_state, pause, prompt_confirm, prompt_multiselect_with_help, prompt_select,
-    prompt_text,
+    get_state, prompt_confirm, prompt_multiselect_with_help, prompt_select, prompt_text,
+    run_tui_screen,
 };
 
 pub fn manage_mcp_menu(_app_type: &AppType) -> Result<(), AppError> {
     loop {
-        clear_screen();
-        println!("\n{}", highlight(texts::mcp_management()));
-        println!("{}", "─".repeat(60));
-
         let state = get_state()?;
         let servers = McpService::get_all_servers(&state)?;
 
-        if servers.is_empty() {
-            println!("{}", info(texts::no_mcp_servers()));
+        let choices = vec![
+            texts::sync_all_servers().to_string(),
+            texts::mcp_enable_server().to_string(),
+            texts::mcp_disable_server().to_string(),
+            texts::mcp_delete_server().to_string(),
+            texts::mcp_import_servers().to_string(),
+            texts::mcp_validate_command().to_string(),
+            texts::back_to_main().to_string(),
+        ];
+
+        let header_lines = if servers.is_empty() {
+            vec![texts::no_mcp_servers().to_string()]
         } else {
             let mut table = create_table();
             table.set_header(vec![
@@ -46,28 +55,36 @@ pub fn manage_mcp_menu(_app_type: &AppType) -> Result<(), AppError> {
                 ]);
             }
 
-            println!("{}", table);
-        }
+            table
+                .to_string()
+                .lines()
+                .map(|line| line.to_string())
+                .collect()
+        };
 
-        println!();
-        let choices = vec![
-            texts::sync_all_servers(),
-            texts::mcp_enable_server(),
-            texts::mcp_disable_server(),
-            texts::mcp_delete_server(),
-            texts::mcp_import_servers(),
-            texts::mcp_validate_command(),
-            texts::back_to_main(),
-        ];
+        let accent = current_tui_app()
+            .map(|app| accent_color(&app))
+            .unwrap_or(ratatui::style::Color::Blue);
+        let mut screen = ListScreen::new(
+            texts::mcp_management(),
+            choices.clone(),
+            texts::tui_list_help(),
+            texts::tui_empty_list(),
+            accent,
+        )
+        .with_header_lines(header_lines);
 
-        let Some(choice) = prompt_select(texts::choose_action(), choices)? else {
+        let Some(selection) = run_tui_screen(texts::mcp_management(), &mut screen)? else {
             break;
         };
+        let choice = choices[selection].as_str();
 
         if choice == texts::sync_all_servers() {
             McpService::sync_all_enabled(&state)?;
-            println!("\n{}", success(texts::synced_successfully()));
-            pause();
+            tui_show_text(
+                texts::mcp_management(),
+                vec![texts::synced_successfully().to_string()],
+            )?;
         } else if choice == texts::mcp_enable_server() {
             mcp_enable_server_interactive(&state)?;
         } else if choice == texts::mcp_disable_server() {
@@ -87,11 +104,12 @@ pub fn manage_mcp_menu(_app_type: &AppType) -> Result<(), AppError> {
 }
 
 fn mcp_enable_server_interactive(state: &AppState) -> Result<(), AppError> {
-    clear_screen();
     let servers = McpService::get_all_servers(state)?;
     if servers.is_empty() {
-        println!("\n{}", info(texts::no_mcp_servers()));
-        pause();
+        tui_show_text(
+            texts::mcp_enable_server(),
+            vec![texts::no_mcp_servers().to_string()],
+        )?;
         return Ok(());
     }
 
@@ -135,17 +153,20 @@ fn mcp_enable_server_interactive(state: &AppState) -> Result<(), AppError> {
         McpService::toggle_app(state, server_id, app, true)?;
     }
 
-    println!("\n{}", success(&texts::server_enabled(server_id)));
-    pause();
+    tui_show_text(
+        texts::mcp_enable_server(),
+        vec![texts::server_enabled(server_id).to_string()],
+    )?;
     Ok(())
 }
 
 fn mcp_disable_server_interactive(state: &AppState) -> Result<(), AppError> {
-    clear_screen();
     let servers = McpService::get_all_servers(state)?;
     if servers.is_empty() {
-        println!("\n{}", info(texts::no_mcp_servers()));
-        pause();
+        tui_show_text(
+            texts::mcp_disable_server(),
+            vec![texts::no_mcp_servers().to_string()],
+        )?;
         return Ok(());
     }
 
@@ -189,17 +210,20 @@ fn mcp_disable_server_interactive(state: &AppState) -> Result<(), AppError> {
         McpService::toggle_app(state, server_id, app, false)?;
     }
 
-    println!("\n{}", success(&texts::server_disabled(server_id)));
-    pause();
+    tui_show_text(
+        texts::mcp_disable_server(),
+        vec![texts::server_disabled(server_id).to_string()],
+    )?;
     Ok(())
 }
 
 fn mcp_delete_server_interactive(state: &AppState) -> Result<(), AppError> {
-    clear_screen();
     let servers = McpService::get_all_servers(state)?;
     if servers.is_empty() {
-        println!("\n{}", info(texts::no_servers_to_delete()));
-        pause();
+        tui_show_text(
+            texts::mcp_delete_server(),
+            vec![texts::no_servers_to_delete().to_string()],
+        )?;
         return Ok(());
     }
 
@@ -224,32 +248,36 @@ fn mcp_delete_server_interactive(state: &AppState) -> Result<(), AppError> {
     };
 
     if !confirm {
-        println!("\n{}", info(texts::cancelled()));
-        pause();
+        tui_show_text(
+            texts::mcp_delete_server(),
+            vec![texts::cancelled().to_string()],
+        )?;
         return Ok(());
     }
 
     McpService::delete_server(state, server_id)?;
-    println!("\n{}", success(&texts::server_deleted(server_id)));
-    pause();
+    tui_show_text(
+        texts::mcp_delete_server(),
+        vec![texts::server_deleted(server_id).to_string()],
+    )?;
     Ok(())
 }
 
 fn mcp_import_servers_interactive(state: &AppState) -> Result<(), AppError> {
-    clear_screen();
     let mut total = 0;
     total += McpService::import_from_app(state, AppType::Claude)?;
     total += McpService::import_from_app(state, AppType::Codex)?;
     total += McpService::import_from_app(state, AppType::Gemini)?;
     total += McpService::import_from_app(state, AppType::OpenCode)?;
 
-    println!("\n{}", success(&texts::servers_imported(total)));
-    pause();
+    tui_show_text(
+        texts::mcp_import_servers(),
+        vec![texts::servers_imported(total).to_string()],
+    )?;
     Ok(())
 }
 
 fn mcp_validate_command_interactive() -> Result<(), AppError> {
-    clear_screen();
     let Some(command) = prompt_text(texts::enter_command_to_validate())? else {
         return Ok(());
     };
@@ -268,12 +296,20 @@ fn mcp_validate_command_interactive() -> Result<(), AppError> {
             .unwrap_or(false)
     };
 
-    if is_valid {
-        println!("\n{}", success(&texts::command_valid(&command)));
+    let message = if is_valid {
+        texts::command_valid(&command).to_string()
     } else {
-        println!("\n{}", error(&texts::command_invalid(&command)));
-    }
+        texts::command_invalid(&command).to_string()
+    };
+    tui_show_text(texts::mcp_validate_command(), vec![message])?;
+    Ok(())
+}
 
-    pause();
+fn tui_show_text(title: &str, lines: Vec<String>) -> Result<(), AppError> {
+    let accent = current_tui_app()
+        .map(|app| accent_color(&app))
+        .unwrap_or(ratatui::style::Color::Blue);
+    let mut screen = TextViewScreen::new(title, lines, texts::press_enter(), accent);
+    run_tui_screen(title, &mut screen)?;
     Ok(())
 }

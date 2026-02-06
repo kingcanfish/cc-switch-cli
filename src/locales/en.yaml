@@ -52,7 +52,7 @@ no:
   prompts_to_delete: "No prompts to delete."
 
 welcome:
-  title: "    🎯 CC-Switch Interactive Mode"
+  title: "🎯 CC-Switch Interactive Mode"
 
 application: "Application"
 
@@ -64,6 +64,14 @@ main_menu:
   search_prompt: "Enter search keyword (empty/Esc to clear):"
   filtering: "🔎 Search: {query}"
   no_matches: "No matching menu items"
+
+tui:
+  list_help: "↑↓ to move, Enter to select, Esc to go back, type to filter"
+  text_help: "Type to edit, Enter to confirm, Esc to cancel"
+  confirm_help: "←→ to choose, Enter to confirm, Esc to cancel"
+  empty_list: "No items available"
+  yes: "Yes"
+  no: "No"
 
 menu:
   manage_providers: "🔌 Manage Providers"
@@ -88,6 +96,9 @@ skills:
   available_header: "Available Skills"
   none_installed: "No skills installed."
   none_found: "No skills found."
+  loading: "Fetching skills..."
+  fetch_timeout: "Skill list fetch timed out; showing local skills only."
+  showing_local_only: "Showing local installed skills only."
   search_prompt: "Enter search keyword (empty for all):"
   select_prompt: "Select a skill:"
   name_prompt: "Enter skill name or URL:"
@@ -159,6 +170,8 @@ current:
   configuration: "👁️ Current Configuration"
   language_label: "Current Language"
 
+no_current_provider: "No current provider selected."
+
 only:
   one_provider: "Only one provider available. Cannot switch."
 
@@ -168,6 +181,12 @@ switched:
 
 restart:
   note: "Note: Restart your CLI client to apply the changes."
+
+syncing_to_live_config: "Syncing to live config files..."
+synced_live_config: "✓ Changes synced to live config files"
+synced_opencode_live_config: "✓ Changes synced to OpenCode live config"
+
+invalid_toml_syntax: "Invalid TOML syntax"
 
 cancelled: "Cancelled."
 
@@ -235,6 +254,9 @@ api:
   url_label_colon: "API URL"
   key_display_label: "API Key"
 
+endpoint_label_colon: "Endpoint"
+no_api_url_configured: "No API URL configured for this provider"
+
 base:
   url_label: "Base URL:"
   url_placeholder: "e.g., https://api.anthropic.com"
@@ -271,6 +293,8 @@ codex:
   wire_api_help: "chat = Chat Completions API (most providers), responses = OpenAI Responses API"
   env_reminder: "⚠ Make sure to set the {env_key} environment variable with your API key\n  Example: export {env_key}=\"your-api-key\""
   openai_auth_info: "✓ OpenAI auth mode: Codex will use auth.json/credential store; no OPENAI_API_KEY env var required"
+  base_url_help: "API endpoint (e.g., https://api.openai.com/v1)"
+  model_help: "Model name (e.g., gpt-5.2-codex, o3)"
   dual_write_info: "✓ Dual-write mode enabled (compatible with all Codex versions)\n• Legacy Codex: Will use API Key from auth.json\n• Codex 0.64+: Can use env variable {env_key} (more secure)\nExample: export {env_key}=\"your-api-key\""
 
 use:
@@ -495,6 +519,20 @@ imported:
 
 backup:
   created: "✓ Backup created, ID: {id}"
+  use_custom_name_confirm: "Use a custom backup name?"
+  name_prompt: "Enter backup name:"
+  name_help: "Letters, numbers, hyphens, and underscores only"
+  location: "Location: {path}"
+
+restore:
+  no_backups_available: "No backups available"
+  create_backup_hint: "Tip: use '💾 Backup Config' to create one"
+  select_backup: "Select a backup to restore:"
+  invalid_selection: "Invalid selection"
+  warning_title: "Warning:"
+  warning_replace_current: "This will replace current config with the selected backup"
+  warning_auto_backup: "Current config will be backed up first"
+  pre_backup_created: "Backup created before restore: {id}"
 
 restored:
   from: "✓ Restored from '{path}'"
@@ -516,6 +554,17 @@ command:
 
 speedtest:
   endpoint: "🚀 Speedtest endpoint"
+
+duplicating_provider: "Duplicating provider '{id}'..."
+provider_duplication_not_implemented: "Provider duplication is not yet implemented."
+testing_provider: "Testing provider '{name}'..."
+speedtest_failed: "Failed"
+speedtest_timeout: "Timeout"
+speedtest_completed_success: "✓ Speedtest completed successfully"
+latency_label: "Latency"
+status_label: "Status"
+not_applicable: "N/A"
+async_runtime_create_failed: "Failed to create async runtime: {err}"
 
 back: "← Back"
 
@@ -550,6 +599,7 @@ opencode_api_key_help: "Optional API key; you can use {env:KEY}"
 opencode_models_label: "Models (comma-separated IDs)"
 opencode_models_help: "Optional model IDs; each will use the ID as name"
 opencode_models_count_label: "Models"
+npm_display_label: "npm"
 opencode_additive_mode_notice: "OpenCode is additive mode; no current provider"
 opencode_no_current_provider: "OpenCode uses additive mode; no current provider"
 opencode_switch_not_supported: "OpenCode does not support switching providers (additive mode)"

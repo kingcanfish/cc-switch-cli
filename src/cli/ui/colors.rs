@@ -21,7 +21,7 @@ pub fn set_tui_theme_app(app_type: Option<AppType>) {
     apply_inquire_theme();
 }
 
-fn get_tui_theme_app() -> Option<AppType> {
+pub fn current_tui_app() -> Option<AppType> {
     tui_theme_app_cell()
         .read()
         .expect("tui theme app lock poisoned")
@@ -43,7 +43,7 @@ fn apply_inquire_theme() {
         return;
     }
 
-    let Some(app_type) = get_tui_theme_app() else {
+    let Some(app_type) = current_tui_app() else {
         set_global_render_config(RenderConfig::default());
         return;
     };
@@ -88,7 +88,7 @@ fn highlight_color_for_app(app_type: &AppType) -> Color {
 }
 
 pub fn highlight(text: &str) -> String {
-    let Some(app_type) = get_tui_theme_app() else {
+    let Some(app_type) = current_tui_app() else {
         return text.bright_blue().bold().to_string();
     };
 

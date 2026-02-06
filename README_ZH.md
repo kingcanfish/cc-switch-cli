@@ -2,7 +2,7 @@
 
 # CC-Switch CLI
 
-[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/kingcanfish/cc-switch-cli/releases)
+[![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)](https://github.com/kingcanfish/cc-switch-cli/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/kingcanfish/cc-switch-cli/releases)
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-orange.svg)](https://www.rust-lang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -24,6 +24,10 @@
 
 **致谢：** 原始架构和核心功能来自 [farion1231/cc-switch](https://github.com/farion1231/cc-switch)
 
+## 📝 变更日志
+
+最新变更请查看 [`docs/CHANGELOG.md`](docs/CHANGELOG.md)。
+
 ---
 
 ## 🚀 快速开始
@@ -33,6 +37,9 @@
 cc-switch-cli
 ```
 🤩 按照屏幕菜单探索功能。
+
+- 交互模式已统一为端到端 TUI。
+- 长操作使用底部轻量状态条 / spinner，不再切换整页加载界面。
 
 **命令行模式**
 ```bash
@@ -199,10 +206,10 @@ brew upgrade cc-switch-cli
 
 ```bash
 # 下载 Universal Binary（推荐，支持 Apple Silicon + Intel）
-curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.1.2-darwin-universal.tar.gz
+curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.1.3-darwin-universal.tar.gz
 
 # 解压
-tar -xzf cc-switch-cli-v0.1.2-darwin-universal.tar.gz
+tar -xzf cc-switch-cli-v0.1.3-darwin-universal.tar.gz
 
 # 添加执行权限
 chmod +x cc-switch-cli
@@ -218,10 +225,10 @@ xattr -cr /usr/local/bin/cc-switch-cli
 
 ```bash
 # 下载
-curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.1.2-linux-x64-musl.tar.gz
+curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.1.3-linux-x64-musl.tar.gz
 
 # 解压
-tar -xzf cc-switch-cli-v0.1.2-linux-x64-musl.tar.gz
+tar -xzf cc-switch-cli-v0.1.3-linux-x64-musl.tar.gz
 
 # 添加执行权限
 chmod +x cc-switch-cli
@@ -234,8 +241,8 @@ sudo mv cc-switch-cli /usr/local/bin/
 
 ```bash
 # 适用于树莓派或 ARM 服务器
-curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.1.2-linux-arm64-musl.tar.gz
-tar -xzf cc-switch-cli-v0.1.2-linux-arm64-musl.tar.gz
+curl -LO https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.1.3-linux-arm64-musl.tar.gz
+tar -xzf cc-switch-cli-v0.1.3-linux-arm64-musl.tar.gz
 chmod +x cc-switch-cli
 sudo mv cc-switch-cli /usr/local/bin/
 ```
@@ -244,7 +251,7 @@ sudo mv cc-switch-cli /usr/local/bin/
 
 ```powershell
 # 下载 zip 文件
-# https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.1.2-windows-x64.zip
+# https://github.com/kingcanfish/cc-switch-cli/releases/latest/download/cc-switch-cli-v0.1.3-windows-x64.zip
 
 # 解压后将 cc-switch-cli.exe 移动到 PATH 目录，例如：
 move cc-switch-cli.exe C:\Windows\System32\

@@ -8,15 +8,29 @@ use crate::cli::commands::provider_input::{
     ProviderAddMode,
 };
 use crate::cli::i18n::texts;
+use crate::cli::interactive::utils::{
+    prompt_confirm, prompt_select, prompt_text_with_help, run_tui_screen,
+};
+use crate::cli::tui::theme::accent_color;
+use crate::cli::tui::{is_tui_active, TextViewScreen};
 use crate::cli::ui::{create_table, error, highlight, info, success, warning};
 use crate::error::AppError;
 use crate::provider::Provider;
 use crate::services::{ProviderService, SpeedtestService};
 use crate::store::AppState;
-use inquire::{Confirm, Select, Text};
 
 fn supports_official_provider(app_type: &AppType) -> bool {
     matches!(app_type, AppType::Codex)
+}
+
+fn tui_show_text(app_type: &AppType, title: &str, lines: Vec<String>) -> Result<(), AppError> {
+    if !is_tui_active() {
+        return Ok(());
+    }
+    let accent = accent_color(app_type);
+    let mut screen = TextViewScreen::new(title, lines, texts::press_enter(), accent);
+    run_tui_screen(title, &mut screen)?;
+    Ok(())
 }
 
 #[derive(Subcommand)]
@@ -83,14 +97,19 @@ fn list_providers(app_type: AppType) -> Result<(), AppError> {
     let current_id = ProviderService::current(&state, app_type.clone())?;
 
     if providers.is_empty() {
-        println!("{}", info("No providers found."));
+        println!("{}", info(texts::no_providers()));
         println!("{}", texts::no_providers_hint());
         return Ok(());
     }
 
     // 创建表格
     let mut table = create_table();
-    table.set_header(vec!["", "ID", "Name", "API URL"]);
+    table.set_header(vec![
+        "",
+        texts::id_label(),
+        texts::name_display_label(),
+        texts::api_url_label_colon(),
+    ]);
 
     // 按创建时间排序
     let mut provider_list: Vec<_> = providers.into_iter().collect();
@@ -107,7 +126,7 @@ fn list_providers(app_type: AppType) -> Result<(), AppError> {
     for (id, provider) in provider_list {
         let current_marker = if id == current_id { "✓" } else { " " };
         let api_url = extract_api_url(&provider.settings_config, &app_type)
-            .unwrap_or_else(|| "N/A".to_string());
+            .unwrap_or_else(|| texts::not_applicable().to_string());
 
         table.add_row(vec![
             current_marker.to_string(),
@@ -118,11 +137,16 @@ fn list_providers(app_type: AppType) -> Result<(), AppError> {
     }
 
     println!("{}", table);
-    println!("\n{} Application: {}", info("ℹ"), app_str);
+    println!("\n{} {}: {}", info("ℹ"), texts::application(), app_str);
     if matches!(app_type, AppType::OpenCode) {
         println!("{}", info(texts::opencode_additive_mode_notice()));
     } else {
-        println!("{} Current: {}", info("→"), highlight(&current_id));
+        println!(
+            "{} {}: {}",
+            info("→"),
+            texts::active(),
+            highlight(&current_id)
+        );
     }
 
     Ok(())
@@ -139,14 +163,14 @@ fn show_current(app_type: AppType) -> Result<(), AppError> {
 
     let provider = providers
         .get(&current_id)
-        .ok_or_else(|| AppError::Message(format!("Current provider '{}' not found", current_id)))?;
+        .ok_or_else(|| AppError::Message(texts::provider_not_found(&current_id)))?;
 
-    println!("{}", highlight("Current Provider"));
+    println!("{}", highlight(texts::current_provider_details()));
     println!("{}", "═".repeat(60));
 
     // 基本信息
     println!("\n{}", highlight(texts::basic_info_section_header()));
-    println!("  ID:       {}", current_id);
+    println!("  {}:       {}", texts::id_label(), current_id);
     println!(
         "  {}:     {}",
         texts::name_label_with_colon(),
@@ -165,12 +189,18 @@ fn show_current(app_type: AppType) -> Result<(), AppError> {
         // API 配置
         println!("\n{}", highlight(texts::api_config_section_header()));
         println!(
-            "  Base URL: {}",
-            config.base_url.unwrap_or_else(|| "N/A".to_string())
+            "  {}: {}",
+            texts::base_url_display_label(),
+            config
+                .base_url
+                .unwrap_or_else(|| texts::not_applicable().to_string())
         );
         println!(
-            "  API Key:  {}",
-            config.api_key.unwrap_or_else(|| "N/A".to_string())
+            "  {}:  {}",
+            texts::api_key_display_label(),
+            config
+                .api_key
+                .unwrap_or_else(|| texts::not_applicable().to_string())
         );
 
         // 模型配置
@@ -178,26 +208,37 @@ fn show_current(app_type: AppType) -> Result<(), AppError> {
         println!(
             "  {}:   {}",
             texts::main_model_label_with_colon(),
-            config.model.unwrap_or_else(|| "default".to_string())
+            config
+                .model
+                .unwrap_or_else(|| texts::default_model_display().to_string())
         );
         println!(
-            "  Haiku:    {}",
-            config.haiku_model.unwrap_or_else(|| "default".to_string())
+            "  {}:    {}",
+            texts::haiku_model_display(),
+            config
+                .haiku_model
+                .unwrap_or_else(|| texts::default_model_display().to_string())
         );
         println!(
-            "  Sonnet:   {}",
-            config.sonnet_model.unwrap_or_else(|| "default".to_string())
+            "  {}:   {}",
+            texts::sonnet_model_display(),
+            config
+                .sonnet_model
+                .unwrap_or_else(|| texts::default_model_display().to_string())
         );
         println!(
-            "  Opus:     {}",
-            config.opus_model.unwrap_or_else(|| "default".to_string())
+            "  {}:     {}",
+            texts::opus_model_display(),
+            config
+                .opus_model
+                .unwrap_or_else(|| texts::default_model_display().to_string())
         );
     } else {
         // Codex/Gemini 应用只显示 API URL
-        println!("\n{}", highlight("API 配置 / API Configuration"));
+        println!("\n{}", highlight(texts::api_config_section_header()));
         let api_url = extract_api_url(&provider.settings_config, &app_type)
-            .unwrap_or_else(|| "N/A".to_string());
-        println!("  API URL:  {}", api_url);
+            .unwrap_or_else(|| texts::not_applicable().to_string());
+        println!("  {}:  {}", texts::api_url_label_colon(), api_url);
     }
 
     println!("\n{}", "─".repeat(60));
@@ -217,18 +258,18 @@ fn switch_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
     // 检查 provider 是否存在
     let providers = ProviderService::list(&state, app_type.clone())?;
     if !providers.contains_key(id) {
-        return Err(AppError::Message(format!("Provider '{}' not found", id)));
+        return Err(AppError::Message(texts::provider_not_found(id)));
     }
 
     // 执行切换
     ProviderService::switch(&state, app_type, id)?;
 
-    println!("{}", success(&format!("✓ Switched to provider '{}'", id)));
-    println!("{}", info(&format!("  Application: {}", app_str)));
+    println!("{}", success(&texts::switched_to_provider(id)));
     println!(
-        "\n{}",
-        info("Note: Restart your CLI client to apply the changes.")
+        "{}",
+        info(&format!("  {}: {}", texts::application(), app_str))
     );
+    println!("\n{}", info(texts::restart_note()));
 
     Ok(())
 }
@@ -241,30 +282,50 @@ fn delete_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
         let current_id = ProviderService::current(&state, app_type.clone())?;
         if id == current_id {
             return Err(AppError::Message(
-                "Cannot delete the current active provider. Please switch to another provider first."
-                    .to_string(),
+                texts::cannot_delete_current_provider().to_string(),
             ));
         }
     }
 
     // 确认删除
-    let confirm = inquire::Confirm::new(&format!(
-        "Are you sure you want to delete provider '{}'?",
-        id
-    ))
-    .with_default(false)
-    .prompt()
-    .map_err(|e| AppError::Message(format!("Prompt failed: {}", e)))?;
+    let Some(confirm) = prompt_confirm(&texts::confirm_delete(id), false)? else {
+        if is_tui_active() {
+            tui_show_text(
+                &app_type,
+                texts::delete_provider(),
+                vec![texts::cancelled().to_string()],
+            )?;
+        } else {
+            println!("{}", info(texts::cancelled()));
+        }
+        return Ok(());
+    };
 
     if !confirm {
-        println!("{}", info("Cancelled."));
+        if is_tui_active() {
+            tui_show_text(
+                &app_type,
+                texts::delete_provider(),
+                vec![texts::cancelled().to_string()],
+            )?;
+        } else {
+            println!("{}", info(texts::cancelled()));
+        }
         return Ok(());
     }
 
     // 执行删除
-    ProviderService::delete(&state, app_type, id)?;
+    ProviderService::delete(&state, app_type.clone(), id)?;
 
-    println!("{}", success(&format!("✓ Deleted provider '{}'", id)));
+    if is_tui_active() {
+        tui_show_text(
+            &app_type,
+            texts::delete_provider(),
+            vec![texts::deleted_provider(id)],
+        )?;
+    } else {
+        println!("{}", success(&texts::deleted_provider(id)));
+    }
 
     Ok(())
 }
@@ -273,25 +334,33 @@ fn add_provider(app_type: AppType) -> Result<(), AppError> {
     // Disable bracketed paste mode to work around inquire dropping paste events
     crate::cli::terminal::disable_bracketed_paste_mode_best_effort();
 
-    println!("{}", highlight("Add New Provider"));
-    println!("{}", "=".repeat(50));
+    if !is_tui_active() {
+        println!("{}", highlight(texts::add_provider()));
+        println!("{}", "=".repeat(50));
+    }
 
     let add_mode = if supports_official_provider(&app_type) {
         let choices = vec![
             texts::add_official_provider(),
             texts::add_third_party_provider(),
         ];
-        match Select::new(texts::select_provider_add_mode(), choices.clone()).prompt() {
-            Ok(selected) if selected == texts::add_official_provider() => ProviderAddMode::Official,
-            Ok(_selected) => ProviderAddMode::ThirdParty,
-            Err(inquire::error::InquireError::OperationCanceled)
-            | Err(inquire::error::InquireError::OperationInterrupted) => {
+        let Some(selected) = prompt_select(texts::select_provider_add_mode(), choices.clone())?
+        else {
+            if is_tui_active() {
+                tui_show_text(
+                    &app_type,
+                    texts::add_provider(),
+                    vec![texts::cancelled().to_string()],
+                )?;
+            } else {
                 println!("{}", info(texts::cancelled()));
-                return Ok(());
             }
-            Err(e) => {
-                return Err(AppError::Message(texts::input_failed_error(&e.to_string())));
-            }
+            return Ok(());
+        };
+        if selected == texts::add_official_provider() {
+            ProviderAddMode::Official
+        } else {
+            ProviderAddMode::ThirdParty
         }
     } else {
         ProviderAddMode::ThirdParty
@@ -311,11 +380,20 @@ fn add_provider(app_type: AppType) -> Result<(), AppError> {
     // 2. 收集基本字段
     let (name, website_url) = match (app_type.clone(), add_mode) {
         (AppType::Codex, ProviderAddMode::Official) => {
-            let name = Text::new(texts::provider_name_label())
-                .with_placeholder("OpenAI")
-                .with_help_message(texts::provider_name_help())
-                .prompt()
-                .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+            let Some(name) =
+                prompt_text_with_help(texts::provider_name_label(), texts::provider_name_help())?
+            else {
+                if is_tui_active() {
+                    tui_show_text(
+                        &app_type,
+                        texts::add_provider(),
+                        vec![texts::cancelled().to_string()],
+                    )?;
+                } else {
+                    println!("{}", info(texts::cancelled()));
+                }
+                return Ok(());
+            };
             let name = name.trim().to_string();
             if name.is_empty() {
                 return Err(AppError::InvalidInput(
@@ -327,17 +405,35 @@ fn add_provider(app_type: AppType) -> Result<(), AppError> {
         _ => prompt_basic_fields(None)?,
     };
     let id = generate_provider_id(&name, &existing_ids);
-    println!("{}", info(&texts::generated_id_message(&id)));
+    if is_tui_active() {
+        tui_show_text(
+            &app_type,
+            texts::add_provider(),
+            vec![texts::generated_id_message(&id)],
+        )?;
+    } else {
+        println!("{}", info(&texts::generated_id_message(&id)));
+    }
 
     // 3. 收集配置
     let settings_config = prompt_settings_config_for_add(&app_type, add_mode)?;
 
     // 4. 询问是否配置可选字段
-    let optional = if Confirm::new(texts::configure_optional_fields_prompt())
-        .with_default(false)
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
-    {
+    let Some(configure_optional) =
+        prompt_confirm(texts::configure_optional_fields_prompt(), false)?
+    else {
+        if is_tui_active() {
+            tui_show_text(
+                &app_type,
+                texts::add_provider(),
+                vec![texts::cancelled().to_string()],
+            )?;
+        } else {
+            println!("{}", info(texts::cancelled()));
+        }
+        return Ok(());
+    };
+    let optional = if configure_optional {
         prompt_optional_fields(None)?
     } else {
         OptionalFields::default()
@@ -359,13 +455,25 @@ fn add_provider(app_type: AppType) -> Result<(), AppError> {
     };
 
     // 6. 显示摘要并确认
-    display_provider_summary(&provider, &app_type);
-    if !Confirm::new(&texts::confirm_create_entity(texts::entity_provider()))
-        .with_default(false)
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
-    {
+    display_provider_summary(&provider, &app_type)?;
+    let Some(confirm) = prompt_confirm(
+        &texts::confirm_create_entity(texts::entity_provider()),
+        false,
+    )?
+    else {
         println!("{}", info(texts::cancelled()));
+        return Ok(());
+    };
+    if !confirm {
+        if is_tui_active() {
+            tui_show_text(
+                &app_type,
+                texts::add_provider(),
+                vec![texts::cancelled().to_string()],
+            )?;
+        } else {
+            println!("{}", info(texts::cancelled()));
+        }
         return Ok(());
     }
 
@@ -373,10 +481,18 @@ fn add_provider(app_type: AppType) -> Result<(), AppError> {
     ProviderService::add(&state, app_type.clone(), provider)?;
 
     // 8. 成功消息
-    println!(
-        "\n{}",
-        success(&texts::entity_added_success(texts::entity_provider(), &id))
-    );
+    if is_tui_active() {
+        tui_show_text(
+            &app_type,
+            texts::add_provider(),
+            vec![texts::entity_added_success(texts::entity_provider(), &id)],
+        )?;
+    } else {
+        println!(
+            "\n{}",
+            success(&texts::entity_added_success(texts::entity_provider(), &id))
+        );
+    }
 
     Ok(())
 }
@@ -398,8 +514,17 @@ fn edit_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
     // Disable bracketed paste mode to work around inquire dropping paste events
     crate::cli::terminal::disable_bracketed_paste_mode_best_effort();
 
-    println!("{}", highlight(&format!("Edit Provider: {}", id)));
-    println!("{}", "=".repeat(50));
+    if is_tui_active() {
+        tui_show_text(
+            &app_type,
+            texts::edit_provider_menu(),
+            vec![format!("{} {}", texts::id_label_colon(), id)],
+        )?;
+    } else {
+        println!("{}", highlight(texts::edit_provider_menu()));
+        println!("{}: {}", texts::id_label_colon(), id);
+        println!("{}", "=".repeat(50));
+    }
 
     // 1. 加载并验证供应商存在
     let state = AppState {
@@ -421,33 +546,64 @@ fn edit_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
     drop(config);
 
     // 2. 显示当前配置
-    println!("\n{}", highlight(texts::current_config_header()));
-    display_provider_summary(&original, &app_type);
-    println!();
+    if is_tui_active() {
+        tui_show_text(&app_type, texts::current_config_header(), Vec::new())?;
+    } else {
+        println!("\n{}", highlight(texts::current_config_header()));
+    }
+    display_provider_summary(&original, &app_type)?;
+    if !is_tui_active() {
+        println!();
+    }
 
     // 3. 全量编辑各字段（使用当前值作为默认）
-    println!("{}", info(texts::edit_fields_instruction()));
+    if is_tui_active() {
+        tui_show_text(
+            &app_type,
+            texts::edit_provider_menu(),
+            vec![texts::edit_fields_instruction().to_string()],
+        )?;
+    } else {
+        println!("{}", info(texts::edit_fields_instruction()));
+    }
 
     // 调用 prompt_basic_fields 来处理基本字段输入（自动使用 initial_value）
     let (name, website_url) = prompt_basic_fields(Some(&original))?;
 
     // 4. 询问是否修改配置
-    let settings_config = if Confirm::new(texts::modify_provider_config_prompt())
-        .with_default(false)
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
-    {
+    let Some(modify_config) = prompt_confirm(texts::modify_provider_config_prompt(), false)? else {
+        if is_tui_active() {
+            tui_show_text(
+                &app_type,
+                texts::edit_provider_menu(),
+                vec![texts::cancelled().to_string()],
+            )?;
+        } else {
+            println!("{}", info(texts::cancelled()));
+        }
+        return Ok(());
+    };
+    let settings_config = if modify_config {
         prompt_settings_config(&app_type, Some(&original.settings_config))?
     } else {
         original.settings_config.clone()
     };
 
     // 5. 询问是否修改可选字段
-    let optional = if Confirm::new(texts::modify_optional_fields_prompt())
-        .with_default(false)
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
-    {
+    let Some(modify_optional) = prompt_confirm(texts::modify_optional_fields_prompt(), false)?
+    else {
+        if is_tui_active() {
+            tui_show_text(
+                &app_type,
+                texts::edit_provider_menu(),
+                vec![texts::cancelled().to_string()],
+            )?;
+        } else {
+            println!("{}", info(texts::cancelled()));
+        }
+        return Ok(());
+    };
+    let optional = if modify_optional {
         prompt_optional_fields(Some(&original))?
     } else {
         OptionalFields::from_provider(&original)
@@ -469,14 +625,38 @@ fn edit_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
     };
 
     // 7. 显示修改摘要并确认
-    println!("\n{}", highlight(texts::updated_config_header()));
-    display_provider_summary(&updated, &app_type);
-    if !Confirm::new(&texts::confirm_update_entity(texts::entity_provider()))
-        .with_default(false)
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
-    {
-        println!("{}", info(texts::cancelled()));
+    if is_tui_active() {
+        tui_show_text(&app_type, texts::updated_config_header(), Vec::new())?;
+    } else {
+        println!("\n{}", highlight(texts::updated_config_header()));
+    }
+    display_provider_summary(&updated, &app_type)?;
+    let Some(confirm) = prompt_confirm(
+        &texts::confirm_update_entity(texts::entity_provider()),
+        false,
+    )?
+    else {
+        if is_tui_active() {
+            tui_show_text(
+                &app_type,
+                texts::edit_provider_menu(),
+                vec![texts::cancelled().to_string()],
+            )?;
+        } else {
+            println!("{}", info(texts::cancelled()));
+        }
+        return Ok(());
+    };
+    if !confirm {
+        if is_tui_active() {
+            tui_show_text(
+                &app_type,
+                texts::edit_provider_menu(),
+                vec![texts::cancelled().to_string()],
+            )?;
+        } else {
+            println!("{}", info(texts::cancelled()));
+        }
         return Ok(());
     }
 
@@ -484,20 +664,28 @@ fn edit_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
     ProviderService::update(&state, app_type.clone(), updated)?;
 
     // 9. 成功消息
-    println!(
-        "\n{}",
-        success(&texts::entity_updated_success(texts::entity_provider(), id))
-    );
-    if is_current {
-        println!("{}", warning(texts::current_provider_synced_warning()));
+    if is_tui_active() {
+        let mut lines = vec![texts::entity_updated_success(texts::entity_provider(), id)];
+        if is_current {
+            lines.push(texts::current_provider_synced_warning().to_string());
+        }
+        tui_show_text(&app_type, texts::edit_provider_menu(), lines)?;
+    } else {
+        println!(
+            "\n{}",
+            success(&texts::entity_updated_success(texts::entity_provider(), id))
+        );
+        if is_current {
+            println!("{}", warning(texts::current_provider_synced_warning()));
+        }
     }
 
     Ok(())
 }
 
 fn duplicate_provider(_app_type: AppType, id: &str) -> Result<(), AppError> {
-    println!("{}", info(&format!("Duplicating provider '{}'...", id)));
-    println!("{}", error("Provider duplication is not yet implemented."));
+    println!("{}", info(&texts::duplicating_provider(id)));
+    println!("{}", error(texts::provider_duplication_not_implemented()));
     Ok(())
 }
 
@@ -508,22 +696,22 @@ fn speedtest_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
     let providers = ProviderService::list(&state, app_type.clone())?;
     let provider = providers
         .get(id)
-        .ok_or_else(|| AppError::Message(format!("Provider '{}' not found", id)))?;
+        .ok_or_else(|| AppError::Message(texts::provider_not_found(id)))?;
 
     // Extract API URL
     let api_url = extract_api_url(&provider.settings_config, &app_type)
-        .ok_or_else(|| AppError::Message(format!("No API URL configured for provider '{}'", id)))?;
+        .ok_or_else(|| AppError::Message(texts::no_api_url_configured().to_string()))?;
 
+    println!("{}", info(&texts::testing_provider(&provider.name)));
     println!(
         "{}",
-        info(&format!("Testing provider '{}'...", provider.name))
+        info(&format!("{}: {}", texts::endpoint_label_colon(), api_url))
     );
-    println!("{}", info(&format!("Endpoint: {}", api_url)));
     println!();
 
     // Run speedtest asynchronously
     let runtime = tokio::runtime::Runtime::new()
-        .map_err(|e| AppError::Message(format!("Failed to create async runtime: {}", e)))?;
+        .map_err(|e| AppError::Message(texts::async_runtime_create_failed(&e.to_string())))?;
 
     let results = runtime
         .block_on(async { SpeedtestService::test_endpoints(vec![api_url.clone()], None).await })?;
@@ -531,20 +719,24 @@ fn speedtest_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
     // Display results
     if let Some(result) = results.first() {
         let mut table = create_table();
-        table.set_header(vec!["Endpoint", "Latency", "Status"]);
+        table.set_header(vec![
+            texts::endpoint_label_colon(),
+            texts::latency_label(),
+            texts::status_label(),
+        ]);
 
         let latency_str = if let Some(latency) = result.latency {
             format!("{} ms", latency)
         } else if result.error.is_some() {
-            "Failed".to_string()
+            texts::speedtest_failed().to_string()
         } else {
-            "Timeout".to_string()
+            texts::speedtest_timeout().to_string()
         };
 
         let status_str = result
             .status
             .map(|s| s.to_string())
-            .unwrap_or_else(|| "N/A".to_string());
+            .unwrap_or_else(|| texts::not_applicable().to_string());
 
         table.add_row(vec![result.url.clone(), latency_str, status_str]);
 
@@ -552,9 +744,12 @@ fn speedtest_provider(app_type: AppType, id: &str) -> Result<(), AppError> {
 
         // Show error details if any
         if let Some(err) = &result.error {
-            println!("\n{}", error(&format!("Error: {}", err)));
+            println!(
+                "\n{}",
+                error(&format!("{}: {}", texts::error_prefix(), err))
+            );
         } else if result.latency.is_some() {
-            println!("\n{}", success("✓ Speedtest completed successfully"));
+            println!("\n{}", success(texts::speedtest_completed_success()));
         }
     }
 
