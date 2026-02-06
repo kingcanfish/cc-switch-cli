@@ -1,26 +1,27 @@
 use crate::cli::i18n::{current_language, set_language, texts, Language};
-use crate::cli::ui::{highlight, success};
+use crate::cli::tui::theme::accent_color;
+use crate::cli::tui::TextViewScreen;
+use crate::cli::ui::current_tui_app;
 use crate::error::AppError;
 
-use super::utils::{clear_screen, pause, prompt_select};
+use super::utils::{prompt_select, run_tui_screen};
 
 pub fn settings_menu() -> Result<(), AppError> {
     loop {
-        clear_screen();
-        println!("\n{}", highlight(texts::settings_title()));
-        println!("{}", "─".repeat(60));
-
         let lang = current_language();
-        println!(
-            "{}: {}",
+        let prompt = format!(
+            "{} - {}: {}",
+            texts::settings_title(),
             texts::current_language_label(),
-            highlight(lang.display_name())
+            lang.display_name()
         );
-        println!();
 
-        let choices = vec![texts::change_language(), texts::back_to_main()];
+        let choices = vec![
+            texts::change_language().to_string(),
+            texts::back_to_main().to_string(),
+        ];
 
-        let Some(choice) = prompt_select(texts::choose_action(), choices)? else {
+        let Some(choice) = prompt_select(&prompt, choices)? else {
             break;
         };
 
@@ -35,7 +36,6 @@ pub fn settings_menu() -> Result<(), AppError> {
 }
 
 fn change_language_interactive() -> Result<(), AppError> {
-    clear_screen();
     let languages = vec![Language::English, Language::Chinese];
 
     let Some(selected) = prompt_select(texts::select_language(), languages)? else {
@@ -44,8 +44,19 @@ fn change_language_interactive() -> Result<(), AppError> {
 
     set_language(selected)?;
 
-    println!("\n{}", success(texts::language_changed()));
-    pause();
+    tui_show_text(
+        texts::change_language(),
+        vec![texts::language_changed().to_string()],
+    )?;
 
+    Ok(())
+}
+
+fn tui_show_text(title: &str, lines: Vec<String>) -> Result<(), AppError> {
+    let accent = current_tui_app()
+        .map(|app| accent_color(&app))
+        .unwrap_or(ratatui::style::Color::Blue);
+    let mut screen = TextViewScreen::new(title, lines, texts::press_enter(), accent);
+    run_tui_screen(title, &mut screen)?;
     Ok(())
 }

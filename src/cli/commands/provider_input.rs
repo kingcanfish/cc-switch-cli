@@ -3,10 +3,17 @@
 
 use crate::app_config::AppType;
 use crate::cli::i18n::texts;
+use crate::cli::interactive::utils::{
+    prompt_confirm, prompt_select_with_help_and_default, prompt_text_with_default_and_help,
+    prompt_text_with_help, run_tui_screen,
+};
+use crate::cli::tui::theme::accent_color;
+use crate::cli::tui::{is_tui_active, TextViewScreen};
+use crate::cli::ui::current_tui_app;
 use crate::error::AppError;
 use crate::provider::Provider;
 use colored::Colorize;
-use inquire::{Confirm, Select, Text};
+use ratatui::style::Color;
 use serde_json::{json, Value};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -16,6 +23,27 @@ const CODEX_OFFICIAL_BASE_URL: &str = "https://api.openai.com/v1";
 pub enum ProviderAddMode {
     Official,
     ThirdParty,
+}
+
+fn cancel_error() -> AppError {
+    AppError::Message(texts::input_failed_error(texts::cancelled()))
+}
+
+fn require_input<T>(value: Option<T>) -> Result<T, AppError> {
+    value.ok_or_else(cancel_error)
+}
+
+fn tui_show_text(title: &str, lines: Vec<String>) -> Result<(), AppError> {
+    if !is_tui_active() {
+        return Ok(());
+    }
+
+    let accent = current_tui_app()
+        .map(|app| accent_color(&app))
+        .unwrap_or(Color::Blue);
+    let mut screen = TextViewScreen::new(title, lines, texts::press_enter(), accent);
+    run_tui_screen(title, &mut screen)?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -133,19 +161,16 @@ pub fn prompt_basic_fields(
 ) -> Result<(String, Option<String>), AppError> {
     // 供应商名称：根据上下文选择方法
     let name = if let Some(provider) = current {
-        // 编辑模式：预填充当前值
-        Text::new(texts::provider_name_label())
-            .with_initial_value(&provider.name)
-            .with_help_message(texts::provider_name_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            texts::provider_name_label(),
+            &provider.name,
+            texts::provider_name_help(),
+        )?)?
     } else {
-        // 新增模式：显示示例占位符
-        Text::new(texts::provider_name_label())
-            .with_placeholder("OpenAI")
-            .with_help_message(texts::provider_name_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(
+            texts::provider_name_label(),
+            texts::provider_name_help(),
+        )?)?
     };
 
     let name = name.trim().to_string();
@@ -158,17 +183,16 @@ pub fn prompt_basic_fields(
     // 官网 URL：同样处理
     let website_url = if let Some(provider) = current {
         let initial = provider.website_url.as_deref().unwrap_or("");
-        Text::new(texts::website_url_label())
-            .with_initial_value(initial)
-            .with_help_message(texts::website_url_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            texts::website_url_label(),
+            initial,
+            texts::website_url_help(),
+        )?)?
     } else {
-        Text::new(texts::website_url_label())
-            .with_placeholder("https://openai.com")
-            .with_help_message(texts::website_url_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(
+            texts::website_url_label(),
+            texts::website_url_help(),
+        )?)?
     };
 
     let website_url = if website_url.trim().is_empty() {
@@ -216,20 +240,22 @@ fn prompt_model_field(
         .and_then(|e| e.get(env_key))
         .and_then(|m| m.as_str());
 
+    let help = if placeholder.is_empty() {
+        texts::model_default_help().to_string()
+    } else {
+        format!("{} ({})", texts::model_default_help(), placeholder)
+    };
+
     let input = if let Some(existing) = existing_value {
         // 编辑模式 - 有现有值：预填充
-        Text::new(&format!("{}：", field_name))
-            .with_initial_value(existing)
-            .with_help_message(texts::model_default_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            &format!("{}:", field_name),
+            existing,
+            &help,
+        )?)?
     } else {
         // 新增模式或编辑模式无现有值：占位符
-        Text::new(&format!("{}：", field_name))
-            .with_placeholder(placeholder)
-            .with_help_message(texts::model_default_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(&format!("{}:", field_name), &help)?)?
     };
 
     let trimmed = input.trim();
@@ -250,7 +276,9 @@ fn prompt_model_field(
 
 /// Claude 配置输入
 fn prompt_claude_config(current: Option<&Value>) -> Result<Value, AppError> {
-    println!("\n{}", texts::config_claude_header().bright_cyan().bold());
+    if !is_tui_active() {
+        println!("\n{}", texts::config_claude_header().bright_cyan().bold());
+    }
 
     let api_key = if let Some(current_key) = current
         .and_then(|v| v.get("env"))
@@ -259,18 +287,17 @@ fn prompt_claude_config(current: Option<&Value>) -> Result<Value, AppError> {
         .filter(|s| !s.is_empty())
     {
         // 编辑模式：显示完整 API Key 供编辑
-        Text::new(texts::api_key_label())
-            .with_initial_value(current_key)
-            .with_help_message(texts::api_key_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            texts::api_key_label(),
+            current_key,
+            texts::api_key_help(),
+        )?)?
     } else {
         // 新增模式：占位符示例
-        Text::new(texts::api_key_label())
-            .with_placeholder("sk-ant-...")
-            .with_help_message(texts::api_key_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(
+            texts::api_key_label(),
+            texts::api_key_help(),
+        )?)?
     };
 
     let base_url = if let Some(current_url) = current
@@ -279,25 +306,23 @@ fn prompt_claude_config(current: Option<&Value>) -> Result<Value, AppError> {
         .and_then(|u| u.as_str())
         .filter(|s| !s.is_empty())
     {
-        Text::new(texts::base_url_label())
-            .with_initial_value(current_url)
-            .with_help_message(texts::api_key_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            texts::base_url_label(),
+            current_url,
+            texts::api_key_help(),
+        )?)?
     } else {
-        Text::new(texts::base_url_label())
-            .with_placeholder(texts::base_url_placeholder())
-            .with_help_message(texts::api_key_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(
+            texts::base_url_label(),
+            texts::api_key_help(),
+        )?)?
     };
 
     // 询问是否配置模型
-    let config_models = Confirm::new(texts::configure_model_names_prompt())
-        .with_default(false)
-        .with_help_message(texts::api_key_help())
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let config_models = require_input(prompt_confirm(
+        texts::configure_model_names_prompt(),
+        false,
+    )?)?;
 
     let mut env = serde_json::Map::new();
     env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), json!(api_key.trim()));
@@ -353,7 +378,9 @@ fn prompt_claude_config(current: Option<&Value>) -> Result<Value, AppError> {
 
 /// Codex 配置输入（双写模式：同时支持旧版本和 0.64+）
 fn prompt_codex_config(current: Option<&Value>) -> Result<Value, AppError> {
-    println!("\n{}", texts::config_codex_header().bright_cyan().bold());
+    if !is_tui_active() {
+        println!("\n{}", texts::config_codex_header().bright_cyan().bold());
+    }
 
     // 从当前配置提取值
     let current_api_key = current
@@ -396,47 +423,44 @@ fn prompt_codex_config(current: Option<&Value>) -> Result<Value, AppError> {
 
     // 1. API Key（恢复：用于旧版本 Codex 兼容性）
     let api_key = if let Some(current_key) = current_api_key {
-        Text::new(texts::openai_api_key_label())
-            .with_initial_value(current_key)
-            .with_help_message(texts::api_key_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            texts::openai_api_key_label(),
+            current_key,
+            texts::api_key_help(),
+        )?)?
     } else {
-        Text::new(texts::openai_api_key_label())
-            .with_placeholder("sk-...")
-            .with_help_message(texts::api_key_help())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(
+            texts::openai_api_key_label(),
+            texts::api_key_help(),
+        )?)?
     };
 
     // 2. Base URL
+    let base_url_help = texts::codex_base_url_help();
     let base_url = if let Some(current) = current_base_url.as_deref() {
-        Text::new("Base URL:")
-            .with_initial_value(current)
-            .with_help_message("API endpoint (e.g., https://api.openai.com/v1)")
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            texts::base_url_label(),
+            current,
+            base_url_help,
+        )?)?
     } else {
-        Text::new("Base URL:")
-            .with_placeholder("https://api.openai.com/v1")
-            .with_help_message("API endpoint")
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(
+            texts::base_url_label(),
+            base_url_help,
+        )?)?
     };
 
     // 3. Model
+    let model_help = texts::codex_model_help();
+    let model_label = format!("{}:", texts::model_label());
     let model = if let Some(current) = current_model.as_deref() {
-        Text::new("Model:")
-            .with_initial_value(current)
-            .with_help_message("Model name (e.g., gpt-5.2-codex, o3)")
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            &model_label,
+            current,
+            model_help,
+        )?)?
     } else {
-        Text::new("Model:")
-            .with_placeholder("gpt-5.2-codex")
-            .with_help_message("Model name")
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(&model_label, model_help)?)?
     };
 
     // 4. Wire API format (chat or responses)
@@ -445,14 +469,14 @@ fn prompt_codex_config(current: Option<&Value>) -> Result<Value, AppError> {
         Some("responses") => 1,
         _ => 0, // default to chat
     };
-    let wire_api = Select::new(texts::codex_wire_api_label(), wire_api_options)
-        .with_starting_cursor(default_wire_api_index)
-        .with_help_message(texts::codex_wire_api_help())
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let wire_api = require_input(prompt_select_with_help_and_default(
+        texts::codex_wire_api_label(),
+        wire_api_options,
+        texts::codex_wire_api_help(),
+        default_wire_api_index,
+    )?)?;
 
     // 5. Auth mode (OpenAI auth vs env var)
-    println!("\n{}", texts::codex_auth_mode_info().yellow());
     let auth_mode_options = vec![
         texts::codex_auth_mode_openai(),
         texts::codex_auth_mode_env_var(),
@@ -462,37 +486,53 @@ fn prompt_codex_config(current: Option<&Value>) -> Result<Value, AppError> {
         Some(false) => 1,
         None => 0, // default to OpenAI auth (no env var required)
     };
-    let auth_mode = Select::new(texts::codex_auth_mode_label(), auth_mode_options.clone())
-        .with_starting_cursor(default_auth_mode_index)
-        .with_help_message(texts::codex_auth_mode_help())
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let auth_help = format!(
+        "{}\n{}",
+        texts::codex_auth_mode_help(),
+        texts::codex_auth_mode_info()
+    );
+    let auth_mode = require_input(prompt_select_with_help_and_default(
+        texts::codex_auth_mode_label(),
+        auth_mode_options.clone(),
+        &auth_help,
+        default_auth_mode_index,
+    )?)?;
     let use_openai_auth = auth_mode == texts::codex_auth_mode_openai();
 
     // 6. Environment Variable Key (only when using env var mode)
     let env_key = if use_openai_auth {
         None
     } else {
-        println!("\n{}", texts::codex_env_key_info().yellow());
+        let env_help = format!(
+            "{}\n{}",
+            texts::codex_env_key_help(),
+            texts::codex_env_key_info()
+        );
         let env_key = if let Some(current) = current_env_key.as_deref() {
-            Text::new(texts::codex_env_key_label())
-                .with_initial_value(current)
-                .with_help_message(texts::codex_env_key_help())
-                .prompt()
-                .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+            require_input(prompt_text_with_default_and_help(
+                texts::codex_env_key_label(),
+                current,
+                &env_help,
+            )?)?
         } else {
-            Text::new(texts::codex_env_key_label())
-                .with_placeholder("OPENAI_API_KEY")
-                .with_help_message(texts::codex_env_key_help())
-                .prompt()
-                .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+            require_input(prompt_text_with_help(
+                texts::codex_env_key_label(),
+                &env_help,
+            )?)?
         };
         let env_key = if env_key.trim().is_empty() {
             "OPENAI_API_KEY".to_string()
         } else {
             env_key.trim().to_string()
         };
-        println!("\n{}", texts::codex_env_reminder(&env_key).bright_yellow());
+        if is_tui_active() {
+            tui_show_text(
+                texts::codex_env_key_label(),
+                vec![texts::codex_env_reminder(&env_key)],
+            )?;
+        } else {
+            println!("\n{}", texts::codex_env_reminder(&env_key).bright_yellow());
+        }
         Some(env_key)
     };
 
@@ -505,7 +545,14 @@ fn prompt_codex_config(current: Option<&Value>) -> Result<Value, AppError> {
 
     if use_openai_auth {
         config_lines.push("requires_openai_auth = true".to_string());
-        println!("\n{}", texts::codex_openai_auth_info().bright_yellow());
+        if is_tui_active() {
+            tui_show_text(
+                texts::codex_auth_mode_label(),
+                vec![texts::codex_openai_auth_info().to_string()],
+            )?;
+        } else {
+            println!("\n{}", texts::codex_openai_auth_info().bright_yellow());
+        }
     } else {
         if let Some(env_key) = env_key.as_deref() {
             config_lines.push(format!("env_key = \"{}\"", env_key));
@@ -523,8 +570,15 @@ fn prompt_codex_config(current: Option<&Value>) -> Result<Value, AppError> {
 }
 
 fn prompt_codex_official_config() -> Result<Value, AppError> {
-    println!("\n{}", texts::config_codex_header().bright_cyan().bold());
-    println!("\n{}", texts::codex_official_provider_tip().yellow());
+    if is_tui_active() {
+        tui_show_text(
+            texts::config_codex_header(),
+            vec![texts::codex_official_provider_tip().to_string()],
+        )?;
+    } else {
+        println!("\n{}", texts::config_codex_header().bright_cyan().bold());
+        println!("\n{}", texts::codex_official_provider_tip().yellow());
+    }
 
     Ok(build_codex_official_settings_config(
         "gpt-5.2-codex",
@@ -534,7 +588,9 @@ fn prompt_codex_official_config() -> Result<Value, AppError> {
 
 /// Gemini 配置输入（含认证类型选择）
 fn prompt_gemini_config(current: Option<&Value>) -> Result<Value, AppError> {
-    println!("\n{}", texts::config_gemini_header().bright_cyan().bold());
+    if !is_tui_active() {
+        println!("\n{}", texts::config_gemini_header().bright_cyan().bold());
+    }
 
     // 检测当前认证类型
     let current_auth_type = detect_gemini_auth_type(current);
@@ -545,17 +601,25 @@ fn prompt_gemini_config(current: Option<&Value>) -> Result<Value, AppError> {
 
     let auth_options = vec![texts::google_oauth_official(), texts::generic_api_key()];
 
-    let auth_type = Select::new(texts::auth_type_label(), auth_options.clone())
-        .with_starting_cursor(default_index)
-        .with_help_message(texts::select_auth_method_help())
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let auth_type = require_input(prompt_select_with_help_and_default(
+        texts::auth_type_label(),
+        auth_options.clone(),
+        texts::select_auth_method_help(),
+        default_index,
+    )?)?;
 
     // Match using the translated strings
     let google_oauth = texts::google_oauth_official();
 
     if auth_type == google_oauth {
-        println!("{}", texts::use_google_oauth_warning().yellow());
+        if is_tui_active() {
+            tui_show_text(
+                texts::auth_type_label(),
+                vec![texts::use_google_oauth_warning().to_string()],
+            )?;
+        } else {
+            println!("{}", texts::use_google_oauth_warning().yellow());
+        }
         Ok(json!({
             "env": {},
             "config": {}
@@ -568,17 +632,16 @@ fn prompt_gemini_config(current: Option<&Value>) -> Result<Value, AppError> {
             .and_then(|k| k.as_str())
             .filter(|s| !s.is_empty())
         {
-            Text::new(texts::gemini_api_key_label())
-                .with_initial_value(current_key)
-                .with_help_message(texts::generic_api_key_help())
-                .prompt()
-                .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+            require_input(prompt_text_with_default_and_help(
+                texts::gemini_api_key_label(),
+                current_key,
+                texts::generic_api_key_help(),
+            )?)?
         } else {
-            Text::new(texts::gemini_api_key_label())
-                .with_placeholder("AIza... or pk-...")
-                .with_help_message(texts::generic_api_key_help())
-                .prompt()
-                .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+            require_input(prompt_text_with_help(
+                texts::gemini_api_key_label(),
+                texts::generic_api_key_help(),
+            )?)?
         };
 
         let base_url = if let Some(current_url) = current
@@ -587,17 +650,16 @@ fn prompt_gemini_config(current: Option<&Value>) -> Result<Value, AppError> {
             .and_then(|u| u.as_str())
             .filter(|s| !s.is_empty())
         {
-            Text::new(texts::gemini_base_url_label())
-                .with_initial_value(current_url)
-                .with_help_message(texts::gemini_base_url_help())
-                .prompt()
-                .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+            require_input(prompt_text_with_default_and_help(
+                texts::gemini_base_url_label(),
+                current_url,
+                texts::gemini_base_url_help(),
+            )?)?
         } else {
-            Text::new(texts::gemini_base_url_label())
-                .with_placeholder(texts::gemini_base_url_placeholder())
-                .with_help_message(texts::gemini_base_url_help())
-                .prompt()
-                .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+            require_input(prompt_text_with_help(
+                texts::gemini_base_url_label(),
+                texts::gemini_base_url_help(),
+            )?)?
         };
 
         Ok(json!({
@@ -611,17 +673,19 @@ fn prompt_gemini_config(current: Option<&Value>) -> Result<Value, AppError> {
 }
 
 fn prompt_opencode_config(current: Option<&Value>) -> Result<Value, AppError> {
-    println!("\n{}", texts::config_opencode_header().bright_cyan().bold());
+    if !is_tui_active() {
+        println!("\n{}", texts::config_opencode_header().bright_cyan().bold());
+    }
 
     let current_npm = current
         .and_then(|v| v.get("npm"))
         .and_then(|v| v.as_str())
         .unwrap_or("@ai-sdk/openai-compatible");
-    let npm = Text::new(texts::opencode_npm_label())
-        .with_initial_value(current_npm)
-        .with_help_message(texts::opencode_npm_help())
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let npm = require_input(prompt_text_with_default_and_help(
+        texts::opencode_npm_label(),
+        current_npm,
+        texts::opencode_npm_help(),
+    )?)?;
     let npm = npm.trim().to_string();
     if npm.is_empty() {
         return Err(AppError::InvalidInput(
@@ -634,33 +698,33 @@ fn prompt_opencode_config(current: Option<&Value>) -> Result<Value, AppError> {
         .and_then(|v| v.get("baseURL"))
         .and_then(|v| v.as_str())
         .unwrap_or("");
-    let base_url = Text::new(texts::opencode_base_url_label())
-        .with_initial_value(current_base_url)
-        .with_help_message(texts::opencode_base_url_help())
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let base_url = require_input(prompt_text_with_default_and_help(
+        texts::opencode_base_url_label(),
+        current_base_url,
+        texts::opencode_base_url_help(),
+    )?)?;
 
     let current_api_key = current
         .and_then(|v| v.get("options"))
         .and_then(|v| v.get("apiKey"))
         .and_then(|v| v.as_str())
         .unwrap_or("");
-    let api_key = Text::new(texts::opencode_api_key_label())
-        .with_initial_value(current_api_key)
-        .with_help_message(texts::opencode_api_key_help())
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let api_key = require_input(prompt_text_with_default_and_help(
+        texts::opencode_api_key_label(),
+        current_api_key,
+        texts::opencode_api_key_help(),
+    )?)?;
 
     let current_models = current
         .and_then(|v| v.get("models"))
         .and_then(|v| v.as_object())
         .map(|m| m.keys().cloned().collect::<Vec<_>>().join(", "))
         .unwrap_or_default();
-    let models_input = Text::new(texts::opencode_models_label())
-        .with_initial_value(&current_models)
-        .with_help_message(texts::opencode_models_help())
-        .prompt()
-        .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?;
+    let models_input = require_input(prompt_text_with_default_and_help(
+        texts::opencode_models_label(),
+        &current_models,
+        texts::opencode_models_help(),
+    )?)?;
 
     let mut options = serde_json::Map::new();
     if !base_url.trim().is_empty() {
@@ -693,21 +757,22 @@ fn prompt_opencode_config(current: Option<&Value>) -> Result<Value, AppError> {
 
 /// 收集可选字段
 pub fn prompt_optional_fields(current: Option<&Provider>) -> Result<OptionalFields, AppError> {
-    println!("\n{}", texts::optional_fields_config().bright_cyan().bold());
+    if !is_tui_active() {
+        println!("\n{}", texts::optional_fields_config().bright_cyan().bold());
+    }
 
     let notes = if let Some(provider) = current {
         let initial = provider.notes.as_deref().unwrap_or("");
-        Text::new(texts::notes_label())
-            .with_initial_value(initial)
-            .with_help_message(texts::notes_help_edit())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            texts::notes_label(),
+            initial,
+            texts::notes_help_edit(),
+        )?)?
     } else {
-        Text::new(texts::notes_label())
-            .with_placeholder(texts::notes_example_placeholder())
-            .with_help_message(texts::notes_help_new())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(
+            texts::notes_label(),
+            texts::notes_help_new(),
+        )?)?
     };
     let notes = if notes.trim().is_empty() {
         None
@@ -720,17 +785,16 @@ pub fn prompt_optional_fields(current: Option<&Provider>) -> Result<OptionalFiel
             .sort_index
             .map(|i| i.to_string())
             .unwrap_or_default();
-        Text::new(texts::sort_index_label())
-            .with_initial_value(&initial)
-            .with_help_message(texts::sort_index_help_edit())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_default_and_help(
+            texts::sort_index_label(),
+            &initial,
+            texts::sort_index_help_edit(),
+        )?)?
     } else {
-        Text::new(texts::sort_index_label())
-            .with_placeholder(texts::sort_index_placeholder())
-            .with_help_message(texts::sort_index_help_new())
-            .prompt()
-            .map_err(|e| AppError::Message(texts::input_failed_error(&e.to_string())))?
+        require_input(prompt_text_with_help(
+            texts::sort_index_label(),
+            texts::sort_index_help_new(),
+        )?)?
     };
     let sort_index =
         if sort_index_str.trim().is_empty() {
@@ -750,7 +814,13 @@ pub fn prompt_optional_fields(current: Option<&Provider>) -> Result<OptionalFiel
 }
 
 /// 显示供应商配置摘要
-pub fn display_provider_summary(provider: &Provider, app_type: &AppType) {
+pub fn display_provider_summary(provider: &Provider, app_type: &AppType) -> Result<(), AppError> {
+    if is_tui_active() {
+        let lines = provider_summary_lines(provider, app_type);
+        tui_show_text(texts::provider_config_summary(), lines)?;
+        return Ok(());
+    }
+
     println!(
         "\n{}",
         texts::provider_config_summary().bright_green().bold()
@@ -824,7 +894,7 @@ pub fn display_provider_summary(provider: &Provider, app_type: &AppType) {
         }
         AppType::OpenCode => {
             if let Some(npm) = provider.settings_config.get("npm").and_then(|v| v.as_str()) {
-                println!("  npm: {}", npm);
+                println!("  {}: {}", texts::npm_display_label(), npm);
             }
             if let Some(options) = provider.settings_config.get("options") {
                 if let Some(api_key) = options.get("apiKey").and_then(|v| v.as_str()) {
@@ -866,6 +936,122 @@ pub fn display_provider_summary(provider: &Provider, app_type: &AppType) {
     }
 
     println!("{}", texts::summary_divider().bright_green().bold());
+    Ok(())
+}
+
+fn provider_summary_lines(provider: &Provider, app_type: &AppType) -> Vec<String> {
+    let mut lines = Vec::new();
+    lines.push(format!("{}: {}", texts::id_label(), provider.id));
+    lines.push(format!(
+        "{}: {}",
+        texts::provider_name_label(),
+        provider.name
+    ));
+
+    if let Some(website) = &provider.website_url {
+        lines.push(format!("{}: {}", texts::website_label(), website));
+    }
+
+    lines.push(String::new());
+    lines.push(texts::core_config_label().to_string());
+    match app_type {
+        AppType::Claude => {
+            if let Some(env) = provider.settings_config.get("env") {
+                if let Some(api_key) = env.get("ANTHROPIC_AUTH_TOKEN").and_then(|v| v.as_str()) {
+                    lines.push(format!(
+                        "{}: {}",
+                        texts::api_key_display_label(),
+                        mask_api_key(api_key)
+                    ));
+                }
+                if let Some(base_url) = env.get("ANTHROPIC_BASE_URL").and_then(|v| v.as_str()) {
+                    lines.push(format!("{}: {}", texts::base_url_display_label(), base_url));
+                }
+                if let Some(model) = env.get("ANTHROPIC_MODEL").and_then(|v| v.as_str()) {
+                    lines.push(format!("{}: {}", texts::model_label(), model));
+                }
+            }
+        }
+        AppType::Codex => {
+            if let Some(auth) = provider.settings_config.get("auth") {
+                if let Some(api_key) = auth.get("OPENAI_API_KEY").and_then(|v| v.as_str()) {
+                    lines.push(format!(
+                        "{}: {}",
+                        texts::api_key_display_label(),
+                        mask_api_key(api_key)
+                    ));
+                }
+            }
+            if let Some(config) = provider
+                .settings_config
+                .get("config")
+                .and_then(|v| v.as_str())
+            {
+                lines.push(texts::config_toml_lines(config.lines().count()));
+            }
+        }
+        AppType::Gemini => {
+            if let Some(env) = provider.settings_config.get("env") {
+                if let Some(api_key) = env.get("GEMINI_API_KEY").and_then(|v| v.as_str()) {
+                    lines.push(format!(
+                        "{}: {}",
+                        texts::api_key_display_label(),
+                        mask_api_key(api_key)
+                    ));
+                }
+                if let Some(base_url) = env
+                    .get("GOOGLE_GEMINI_BASE_URL")
+                    .or_else(|| env.get("BASE_URL"))
+                    .and_then(|v| v.as_str())
+                {
+                    lines.push(format!("{}: {}", texts::base_url_display_label(), base_url));
+                }
+            }
+        }
+        AppType::OpenCode => {
+            if let Some(npm) = provider.settings_config.get("npm").and_then(|v| v.as_str()) {
+                lines.push(format!("{}: {}", texts::npm_display_label(), npm));
+            }
+            if let Some(options) = provider.settings_config.get("options") {
+                if let Some(api_key) = options.get("apiKey").and_then(|v| v.as_str()) {
+                    lines.push(format!(
+                        "{}: {}",
+                        texts::api_key_display_label(),
+                        mask_api_key(api_key)
+                    ));
+                }
+                if let Some(base_url) = options.get("baseURL").and_then(|v| v.as_str()) {
+                    lines.push(format!("{}: {}", texts::base_url_display_label(), base_url));
+                }
+            }
+            if let Some(models) = provider
+                .settings_config
+                .get("models")
+                .and_then(|v| v.as_object())
+            {
+                if !models.is_empty() {
+                    lines.push(format!(
+                        "{}: {}",
+                        texts::opencode_models_count_label(),
+                        models.len()
+                    ));
+                }
+            }
+        }
+    }
+
+    if provider.notes.is_some() || provider.sort_index.is_some() {
+        lines.push(String::new());
+        lines.push(texts::optional_fields_label().to_string());
+        if let Some(notes) = &provider.notes {
+            lines.push(format!("{}: {}", texts::notes_label_colon(), notes));
+        }
+        if let Some(idx) = provider.sort_index {
+            lines.push(format!("{}: {}", texts::sort_index_label_colon(), idx));
+        }
+    }
+
+    lines
 }
 
 /// 获取当前时间戳（秒）

@@ -52,7 +52,7 @@ no:
   prompts_to_delete: "没有可删除的提示词。"
 
 welcome:
-  title: "    🎯 CC-Switch 交互模式"
+  title: "🎯 CC-Switch 交互模式"
 
 application: "应用程序"
 
@@ -64,6 +64,14 @@ main_menu:
   search_prompt: "输入搜索关键字（空或 Esc 清除过滤）："
   filtering: "🔎 搜索: {query}"
   no_matches: "没有匹配的菜单项"
+
+tui:
+  list_help: "↑↓ 选择，Enter 确认，Esc 返回，输入可过滤"
+  text_help: "输入内容，Enter 确认，Esc 取消"
+  confirm_help: "←→ 选择，Enter 确认，Esc 取消"
+  empty_list: "暂无可用项"
+  yes: "是"
+  no: "否"
 
 menu:
   manage_providers: "🔌 管理供应商"
@@ -88,6 +96,9 @@ skills:
   available_header: "可用技能"
   none_installed: "暂无已安装技能。"
   none_found: "未找到技能。"
+  loading: "正在获取技能列表..."
+  fetch_timeout: "获取技能列表超时，仅显示本地技能。"
+  showing_local_only: "仅显示本地已安装技能。"
   search_prompt: "输入搜索关键字（留空列出全部）："
   select_prompt: "选择一个技能："
   name_prompt: "输入技能名称或 URL："
@@ -159,6 +170,8 @@ current:
   configuration: "👁️ 当前配置"
   language_label: "当前语言"
 
+no_current_provider: "当前未选择供应商。"
+
 only:
   one_provider: "只有一个供应商，无法切换。"
 
@@ -168,6 +181,12 @@ switched:
 
 restart:
   note: "注意：请重启 CLI 客户端以应用更改。"
+
+syncing_to_live_config: "正在同步到 live 配置文件..."
+synced_live_config: "✓ 已同步到 live 配置文件"
+synced_opencode_live_config: "✓ 已同步到 OpenCode live 配置"
+
+invalid_toml_syntax: "TOML 语法无效"
 
 cancelled: "已取消。"
 
@@ -203,7 +222,7 @@ input:
   toml_config: "输入 TOML 配置（多行，输入空行结束）："
 
 cannot:
-  delete_current_provider: "Cannot delete the current active provider. Please switch to another provider first."
+  delete_current_provider: "无法删除当前激活的供应商。请先切换到其他供应商。"
   delete_active: "无法删除当前激活的提示词。"
 
 config:
@@ -234,6 +253,9 @@ api:
   key_help: "留空使用默认值"
   url_label_colon: "API 地址"
   key_display_label: "API Key"
+
+endpoint_label_colon: "端点"
+no_api_url_configured: "该供应商未配置 API 地址"
 
 base:
   url_label: "Base URL："
@@ -270,7 +292,9 @@ codex:
   wire_api_label: "API 格式："
   wire_api_help: "chat = Chat Completions API (大多数第三方), responses = OpenAI Responses API"
   env_reminder: "⚠ 请确保已设置环境变量 {env_key} 并包含您的 API 密钥\n  例如: export {env_key}=\"your-api-key\""
-  openai_auth_info: " OpenAI 认证模式：Codex 将使用 auth.json/系统凭据存储，无需设置 OPENAI_API_KEY 环境变量"
+  openai_auth_info: "OpenAI 认证模式：Codex 将使用 auth.json/系统凭据存储，无需设置 OPENAI_API_KEY 环境变量"
+  base_url_help: "API 端点（例如：https://api.openai.com/v1）"
+  model_help: "模型名称（例如：gpt-5.2-codex、o3）"
   dual_write_info: "✓ 双写模式已启用（兼容所有 Codex 版本）\n• 旧版本 Codex: 将使用 auth.json 中的 API Key\n• Codex 0.64+: 可使用环境变量 {env_key} (更安全)\n例如: export {env_key}=\"your-api-key\""
 
 use:
@@ -495,6 +519,20 @@ imported:
 
 backup:
   created: "✓ 已创建备份，ID: {id}"
+  use_custom_name_confirm: "是否使用自定义备份名称？"
+  name_prompt: "请输入备份名称："
+  name_help: "仅支持字母、数字、短横线和下划线"
+  location: "位置: {path}"
+
+restore:
+  no_backups_available: "暂无可用备份"
+  create_backup_hint: "提示：使用 '💾 备份配置' 创建备份"
+  select_backup: "选择要恢复的备份："
+  invalid_selection: "无效的选择"
+  warning_title: "警告："
+  warning_replace_current: "这将使用所选备份替换当前配置"
+  warning_auto_backup: "当前配置会先自动备份"
+  pre_backup_created: "恢复前配置已备份: {id}"
 
 restored:
   from: "✓ 已从 '{path}' 恢复"
@@ -516,6 +554,17 @@ command:
 
 speedtest:
   endpoint: "🚀 测试端点速度"
+
+duplicating_provider: "正在复制供应商 '{id}'..."
+provider_duplication_not_implemented: "供应商复制功能暂未实现。"
+testing_provider: "正在测试供应商 '{name}'..."
+speedtest_failed: "失败"
+speedtest_timeout: "超时"
+speedtest_completed_success: "✓ 端点测速完成"
+latency_label: "延迟"
+status_label: "状态"
+not_applicable: "N/A"
+async_runtime_create_failed: "创建异步运行时失败：{err}"
 
 back: "← 返回"
 
@@ -550,6 +599,7 @@ opencode_api_key_help: "可选的 API Key，可使用 {env:KEY}"
 opencode_models_label: "Models（逗号分隔 ID）"
 opencode_models_help: "可选模型 ID，将以 ID 作为名称"
 opencode_models_count_label: "模型数量"
+npm_display_label: "npm"
 opencode_additive_mode_notice: "OpenCode 为累加模式，无当前供应商"
 opencode_no_current_provider: "OpenCode 为累加模式，无当前供应商"
 opencode_switch_not_supported: "OpenCode 不支持切换供应商（累加模式）"

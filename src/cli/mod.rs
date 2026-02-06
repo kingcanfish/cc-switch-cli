@@ -5,6 +5,7 @@ pub mod commands;
 pub mod i18n;
 pub mod interactive;
 pub mod terminal;
+pub mod tui;
 pub mod ui;
 
 use crate::app_config::AppType;
